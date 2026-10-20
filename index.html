@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Keeper's Log</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Caveat:wght@500;600&display=swap">
+<style>
+/* Layout: full-bleed first-person canvas with diegetic overlays: crosshair, prompt, subtitles, paper documents and brass machine panels. Single committed dark look. */
+:root{
+  --sea:#07090b;
+  --ink:#2a2318;
+  --paper:#d8cdb0;
+  --bone:#d9d0bc;
+  --dim:#8c8576;
+  --lamp:#e8b25a;
+  --cold:#88a0bd;
+  --blood:#b5503c;
+  --print:"IM Fell English",Georgia,serif;
+  --title:"IM Fell English SC","IM Fell English",Georgia,serif;
+  --hand:"Caveat","Segoe Script","Bradley Hand",cursive;
+  color-scheme:dark;
+}
+html{height:100%}
+body{height:100%;margin:0;background:var(--sea);color:var(--bone);font-family:var(--print);overflow:hidden}
+#stage{position:fixed;inset:0;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;touch-action:none}
+#grain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.075}
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 48%,rgba(0,0,0,.72) 100%)}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .45s}
+#cross{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(217,208,188,.55);pointer-events:none}
+#cross.hot{width:8px;height:8px;margin:-4px 0 0 -4px;background:transparent;border:1px solid rgba(232,178,90,.9)}
+#prompt{position:absolute;left:50%;top:calc(50% + 22px);transform:translateX(-50%);font-size:15px;letter-spacing:.04em;color:var(--bone);text-shadow:0 1px 3px #000;pointer-events:none;white-space:nowrap}
+#prompt kbd{font-family:var(--title);font-size:12px;border:1px solid rgba(217,208,188,.4);border-radius:3px;padding:0 5px;margin-right:6px}
+#sub{position:absolute;left:50%;bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 64px));transform:translateX(-50%);width:min(760px,calc(100% - 32px));text-align:center;font-size:clamp(15px,2vw,19px);line-height:1.45;color:var(--bone);text-shadow:0 1px 4px #000,0 0 12px #000;pointer-events:none;opacity:0;transition:opacity .6s}
+#sub.on{opacity:1}
+#sub i{color:var(--cold)}
+#inv{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:50%;pointer-events:none}
+#inv span{font-family:var(--title);font-size:12px;letter-spacing:.06em;color:var(--dim);border:1px solid rgba(140,133,118,.35);border-radius:3px;padding:2px 7px;background:rgba(7,9,11,.55)}
+#watch{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:max(16px,env(safe-area-inset-top,0px));text-align:center;font-family:var(--title);color:var(--bone);background:rgba(7,9,11,.6);border:1px solid rgba(232,178,90,.35);border-radius:50%;width:86px;height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+#watch b{font-size:22px;font-weight:400;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+#watch span{font-size:9px;letter-spacing:.2em;color:var(--dim)}
+#hint{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));font-size:12px;color:var(--dim);letter-spacing:.04em;pointer-events:none}
+#hint kbd{font-family:var(--title);font-size:11px;border:1px solid rgba(140,133,118,.4);border-radius:3px;padding:0 4px}
+
+#ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(3,4,5,.78)}
+#ov[hidden],#watch[hidden],#touch[hidden],#hint[hidden]{display:none}
+.panel{width:min(640px,100%);max-height:100%;overflow-y:auto;background:#121417;border:1px solid #2c2f33;border-radius:6px;padding:24px 26px;box-shadow:0 30px 80px rgba(0,0,0,.6);color:var(--bone)}
+.panel h1{font-family:var(--title);font-weight:400;font-size:clamp(30px,6vw,52px);line-height:1;margin:0 0 8px;color:var(--bone);letter-spacing:.02em;text-wrap:balance}
+.panel h2{font-family:var(--title);font-weight:400;font-size:24px;margin:0 0 10px;color:var(--lamp);letter-spacing:.03em}
+.panel p{line-height:1.55;margin:10px 0;max-width:62ch}
+.panel .eyebrow{font-family:var(--title);font-size:12px;letter-spacing:.24em;color:var(--dim);margin:0 0 8px}
+.panel .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;color:var(--dim);margin:14px 0}
+.panel .keys b{font-family:var(--title);font-weight:400;color:var(--bone)}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{font-family:var(--title);font-size:16px;letter-spacing:.06em;background:var(--lamp);color:#1a1206;border:0;border-radius:4px;padding:10px 20px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--bone);border:1px solid #3a3d42}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.dial button:focus-visible,.slot:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+
+.paper{width:min(620px,100%);max-height:100%;overflow-y:auto;background:var(--paper);color:var(--ink);border-radius:2px;padding:30px 34px 26px;box-shadow:0 30px 80px rgba(0,0,0,.7);background-image:radial-gradient(ellipse at 20% 10%,rgba(120,90,40,.18),transparent 55%),radial-gradient(ellipse at 90% 85%,rgba(90,60,20,.22),transparent 50%)}
+.paper .hd{font-family:var(--title);font-size:13px;letter-spacing:.2em;text-align:center;margin:0 0 4px;color:#4a3f2c}
+.paper h3{font-family:var(--title);font-weight:400;font-size:22px;text-align:center;margin:0 0 14px;text-wrap:balance}
+.paper p{font-size:17px;line-height:1.55;margin:9px 0}
+.paper .hand p,.paper.hand p{font-family:var(--hand);font-size:23px;line-height:1.3;color:#2a2440}
+.paper .hand{font-family:var(--hand)}
+.paper .entry{border-top:1px solid rgba(60,45,25,.25);padding-top:6px;margin-top:8px}
+.paper table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+.paper td,.paper th{border:1px solid rgba(60,45,25,.35);padding:3px 6px;text-align:center}
+.paper th{font-family:var(--title);font-weight:400;font-size:12px;letter-spacing:.1em}
+.paper .wrap{overflow-x:auto}
+.paper .sig{text-align:right;font-style:italic}
+.paper .close{display:block;margin:18px auto 0;font-family:var(--title);background:transparent;border:1px solid rgba(60,45,25,.5);color:var(--ink);padding:6px 18px;border-radius:3px;cursor:pointer;font-size:14px;letter-spacing:.1em}
+.paper svg text{font-family:var(--print);fill:#2a2318}
+.paper .act{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.paper .act button{font-family:var(--title);background:#2a2318;color:var(--paper);border:0;padding:8px 14px;border-radius:3px;cursor:pointer;font-size:14px;letter-spacing:.06em}
+.paper .act button:disabled{opacity:.35;cursor:default}
+
+.lock{text-align:center}
+.dials{display:flex;justify-content:center;gap:10px;margin:18px 0 8px;flex-wrap:wrap}
+.dial{display:flex;flex-direction:column;align-items:center;gap:4px}
+.dial button{width:44px;height:28px;background:#1d2024;color:var(--bone);border:1px solid #3a3d42;border-radius:3px;cursor:pointer;font-size:14px}
+.dial .v{width:44px;height:52px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#2b241a,#1a150e);border:1px solid #6d5a36;border-radius:4px;font-family:var(--title);font-size:28px;color:var(--lamp);font-variant-numeric:tabular-nums}
+.dial small{font-family:var(--title);font-size:11px;letter-spacing:.14em;color:var(--dim)}
+.shake{animation:shake .35s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.msg{min-height:1.6em;color:var(--dim);font-style:italic;margin-top:8px}
+.msg.good{color:var(--lamp)} .msg.bad{color:var(--blood)}
+
+.mach{display:grid;gap:14px}
+.mach .state{font-size:15px;line-height:1.5;color:var(--bone);background:#0c0e10;border:1px solid #26292d;border-radius:4px;padding:10px 12px;min-height:3.2em}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slotbox{border:1px solid #2f3236;border-radius:4px;padding:10px;text-align:center}
+.slotbox small{display:block;font-family:var(--title);font-size:11px;letter-spacing:.16em;color:var(--dim);margin-bottom:6px}
+.slot{font-family:var(--title);font-size:26px;color:var(--lamp);background:#0c0e10;border:1px dashed #4a4d52;border-radius:50%;width:74px;height:74px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.gears{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.gear{font-family:var(--title);font-size:16px;background:#1d2024;color:var(--bone);border:1px solid #4a4d52;border-radius:50%;width:50px;height:50px;cursor:pointer}
+.gear.sel{border-color:var(--lamp);color:var(--lamp);box-shadow:0 0 0 1px var(--lamp) inset}
+.gear:disabled{opacity:.25;cursor:default}
+.ctl{display:flex;flex-wrap:wrap;gap:8px}
+.ctl .btn{font-size:14px;padding:8px 14px}
+.list{display:grid;gap:6px;margin:10px 0}
+.list button{text-align:left;font-family:var(--print);font-size:16px;background:#16191c;color:var(--bone);border:1px solid #2a2d31;border-radius:3px;padding:8px 12px;cursor:pointer}
+.list button:hover{border-color:var(--lamp)}
+.list .none{color:var(--dim);font-style:italic}
+.concerns li{margin:4px 0;color:var(--bone)}
+.concerns li.done{color:var(--dim);text-decoration:line-through}
+#touch{position:absolute;inset:0;pointer-events:none}
+#touch button{pointer-events:auto;position:absolute;right:max(20px,env(safe-area-inset-right,0px));bottom:max(90px,calc(env(safe-area-inset-bottom,0px) + 90px));width:72px;height:72px;border-radius:50%;background:rgba(232,178,90,.18);border:1px solid rgba(232,178,90,.6);color:var(--bone);font-family:var(--title);font-size:14px}
+#touch .stick{position:absolute;left:max(24px,env(safe-area-inset-left,0px));bottom:max(30px,calc(env(safe-area-inset-bottom,0px) + 30px));width:120px;height:120px;border-radius:50%;border:1px solid rgba(217,208,188,.25)}
+@media (prefers-reduced-motion:reduce){ .shake{animation:none} #fade{transition:none} }
+</style>
+<style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <canvas id="grain" width="320" height="180"></canvas>
+  <div id="vig"></div>
+  <div id="cross"></div>
+  <div id="prompt"></div>
+  <div id="sub"></div>
+  <div id="inv"></div>
+  <div id="watch" hidden><b id="watcht">23:10</b><span>POCKET WATCH</span></div>
+  <div id="hint"><kbd>E</kbd> examine · <kbd>F</kbd> torch · <kbd>J</kbd> papers · <kbd>T</kbd> watch · <kbd>Esc</kbd> pause</div>
+  <div id="touch" hidden><div class="stick"></div><button type="button" id="tuse">Use</button></div>
+  <div id="fade"></div>
+  <div id="ov"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const SAVE_KEY="keepers-log-v1";
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function rnd(seed){ let a=seed|0; return ()=>{ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+if(typeof THREE==="undefined"){ $("ov").innerHTML="<div class='panel'><h2>The engine did not load</h2><p>The 3D library could not be fetched. Check your connection and reload the page.</p></div>"; return; }
+
+/* =====================================================================
+   DOCUMENTS
+   ===================================================================== */
+function baroSVG(){
+  // 6-hourly readings, days 1..23
+  const pts=[]; const r=rnd(7);
+  for(let d=1; d<=23; d++) for(let q=0;q<4;q++){
+    const t=d+q/4; let v=30.04+Math.sin(t*1.3)*.04+(r()-.5)*.03;
+    const dip=(c,depth,w)=>{ const x=t-c; return x<0 ? depth*Math.exp(-x*x/(w*w*0.35)) : depth*Math.exp(-x*x/(w*w*1.6)); };
+    v-=dip(7.82,1.0,.42); v-=dip(15.82,.88,.42); v-=dip(20.3,.42,1.6);
+    pts.push([t,v]);
+  }
+  const X=t=>40+(t-1)*24, Y=v=>20+(30.3-v)*120;
+  let path=pts.map((p,i)=>(i?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1)).join(" ");
+  let grid="";
+  for(let d=1;d<=24;d++){ grid+=`<line x1="${X(d)}" y1="20" x2="${X(d)}" y2="${Y(28.8)}" stroke="rgba(60,45,25,.25)" stroke-width="${d%7===1?1:.5}"/>`; if(d<=23) grid+=`<text x="${X(d+.5)}" y="${Y(28.8)+14}" font-size="10" text-anchor="middle">${d}</text>`; }
+  for(let v=29.0; v<=30.25; v+=.25){ grid+=`<line x1="40" y1="${Y(v)}" x2="${X(24)}" y2="${Y(v)}" stroke="rgba(60,45,25,.25)" stroke-width=".5"/><text x="36" y="${Y(v)+3}" font-size="9" text-anchor="end">${v.toFixed(2)}</text>`; }
+  return `<div class="wrap"><svg viewBox="0 0 640 230" width="100%" role="img" aria-label="Barograph trace for October 1931">${grid}<path d="${path}" fill="none" stroke="#5b2a6e" stroke-width="1.6"/><text x="${X(12.5)}" y="${Y(28.8)+30}" font-size="11" text-anchor="middle">Day of October · each column is one day, midnight to midnight</text></svg></div>`;
+}
+function tideTable(){
+  let rows="";
+  for(let d=1; d<=31; d++){
+    const ph=Math.cos((d-7)/15*Math.PI*2*1.0*1)*.5+.5; // springs at 7, 22
+    const springs=Math.cos(((d-7)/7.5)*Math.PI)*.5+.5;
+    const ht=(2.6+springs*2.6).toFixed(1);
+    const hw1=String((4+Math.round(d*0.8))%12).padStart(2,"0")+":"+String((d*17)%60).padStart(2,"0");
+    const moon = d===7?"● New":d===22?"○ Full":d===14?"◐ First Qtr":d===29?"◑ Last Qtr":"";
+    rows+=`<tr><td>${d}</td><td>${hw1}</td><td>${ht} m</td><td>${moon}</td></tr>`;
+  }
+  return `<div class="wrap"><table><tr><th>Date</th><th>High water</th><th>Height</th><th>Moon</th></tr>${rows}</table></div><p style="font-size:14px">Spring tides (the largest) fall at new and full moon; neap tides (the smallest) at the quarters.</p>`;
+}
+function morseTable(){
+  const M={A:".-",B:"-...",C:"-.-.",D:"-..",E:".",F:"..-.",G:"--.",H:"....",I:"..",J:".---",K:"-.-",L:".-..",M:"--",N:"-.",O:"---",P:".--.",Q:"--.-",R:".-.",S:"...",T:"-",U:"..-",V:"...-",W:".--",X:"-..-",Y:"-.--",Z:"--.."};
+  const ks=Object.keys(M); let rows="";
+  for(let i=0;i<ks.length;i+=4){ rows+="<tr>"+ks.slice(i,i+4).map(k=>`<td style="text-align:left"><b>${k}</b>&nbsp;&nbsp;${M[k].replace(/\./g,"•").replace(/-/g,"—")}</td>`).join("")+"</tr>"; }
+  return `<div class="wrap"><table>${rows}</table></div><p style="font-size:14px">A dash is three times the length of a dot. Longer gaps fall between letters, and longer still between words.</p>`;
+}
+function lensSVG(){
+  return `<svg viewBox="0 0 300 300" width="70%" style="display:block;margin:6px auto" role="img" aria-label="Plan of the lens: four panels in two pairs on opposite faces">
+  <circle cx="150" cy="150" r="118" fill="none" stroke="#2a2318" stroke-width="2"/>
+  <circle cx="150" cy="150" r="14" fill="#2a2318"/>
+  ${[[-12,"A"],[12,"B"],[168,"C"],[192,"D"]].map(([a,l])=>{ const rad=(a-90)*Math.PI/180, x=150+Math.cos(rad)*104, y=150+Math.sin(rad)*104; const lx=150+Math.cos(rad)*136, ly=150+Math.sin(rad)*136; return `<g transform="translate(${x} ${y}) rotate(${a})"><rect x="-17" y="-8" width="34" height="16" fill="#e9dfc4" stroke="#2a2318" stroke-width="1.5"/><circle r="5" fill="none" stroke="#2a2318"/></g><text x="${lx}" y="${ly+4}" font-size="13" text-anchor="middle">${l}</text>`; }).join("")}
+  <path d="M150 20 A130 130 0 0 1 270 110" fill="none" stroke="#2a2318" stroke-dasharray="3 3"/><path d="M262 100 L270 110 L276 98" fill="none" stroke="#2a2318"/>
+  <text x="250" y="60" font-size="11">rotation</text>
+  </svg>`;
+}
+const DOCS={
+  orders:{title:"Relief Orders", html:()=>`<p class="hd">NORTHERN LIGHTS AND COAST BOARD</p><h3>Orders to the Relief Keeper</h3>
+    <p>Edinburgh, 21st October 1931.</p>
+    <p>You are to proceed by the supply boat <i>Ellen Rae</i> to Merrow Island and there relieve Principal Keeper E. Crane and Assistant Keeper T. Wren.</p>
+    <p>No wireless contact has been had with the station since the 12th of October. The light has nevertheless been observed exhibited each night by passing vessels.</p>
+    <p>On arrival you will: <b>first</b>, ascertain the condition of the keepers; <b>second</b>, maintain the light in accordance with the Board's Instructions; <b>third</b>, examine the station log and report upon its keeping.</p>
+    <p>The <i>Ellen Rae</i> cannot lie at the landing after dark. She will return for you at first light on the 24th.</p>
+    <p class="sig">J. M. Lorimer, Superintendent</p>`},
+  delivery:{title:"Stores Docket, 2nd October", html:()=>`<p class="hd">ELLEN RAE · STORES LANDED</p><h3>Merrow Island, 2nd October 1931</h3>
+    <table><tr><td style="text-align:left">Paraffin, 45 gal. drums</td><td>3</td><td style="text-align:left">banded RED, WHITE, GREEN</td></tr><tr><td style="text-align:left">Coal, sacks</td><td>2</td><td></td></tr><tr><td style="text-align:left">Provisions, case</td><td>1</td><td></td></tr><tr><td style="text-align:left">Wicks, box</td><td>1</td><td></td></tr></table>
+    <p><i>Master's note:</i> heavy weather on passage. One drum stood some hours in bilge water before it was got up on deck. I could not say which. Keepers advised to take care in use.</p>
+    <p class="sig">R. Muir, Master</p>`},
+  doornote:{title:"Note pinned to the cottage door", hand:true, html:()=>`<p>Mr Crane —</p><p>I have locked the house. The key is with her, where she keeps watch for you.</p><p>I have gone down to bring you back up.</p><p>If it is not you who reads this: go up to the light before midnight. Keep it turning.</p><p style="text-align:right">T. Wren · 20th</p>`},
+  memorial:{title:"Inscription on the statue", html:()=>`<p class="hd">CUT INTO THE PLINTH</p><h3>MARGARET CRANE</h3><p style="text-align:center;font-size:20px">1889 — 1919</p><p style="text-align:center">TAKEN BY THE SEA</p><p style="text-align:center"><i>She keeps watch for him still.</i></p><p style="font-size:14px;text-align:center">The statue holds a small iron lantern out toward the north rocks.</p>`},
+  tides:{title:"Tide Table, October 1931", html:()=>`<p class="hd">MERROW SOUND</p><h3>Tide Table · October 1931</h3>${tideTable()}`},
+  baro:{title:"Barograph Record", html:()=>`<p class="hd">MERROW ISLAND · BAROGRAPH</p><h3>Pressure, inches of mercury · October 1931</h3>${baroSVG()}<p style="font-size:14px">Trace changed weekly. The glass "falling fast" is a drop of a tenth of an inch or more in an hour.</p>`},
+  lightlist:{title:"List of Lights (extract)", html:()=>`<p class="hd">ADMIRALTY LIST OF LIGHTS · 1931</p><h3>North Coast (extract)</h3>
+    <table><tr><th>No.</th><th>Station</th><th>Character</th><th>Ht.</th><th>Range</th></tr>
+    <tr><td>3711</td><td style="text-align:left">Skerry Point</td><td>Fl (3) W ev 15 s</td><td>22 m</td><td>14 M</td></tr>
+    <tr><td>3714</td><td style="text-align:left">Merrow Island</td><td>Gp Fl (2) W ev 10 s</td><td>41 m</td><td>18 M</td></tr>
+    <tr><td>3716</td><td style="text-align:left">Black Haven</td><td>Gp Fl (2) W ev 15 s</td><td>30 m</td><td>16 M</td></tr>
+    <tr><td>3720</td><td style="text-align:left">Cairn Head</td><td>Occ W ev 6 s</td><td>18 m</td><td>11 M</td></tr></table>
+    <p style="font-size:14px"><b>Gp Fl (2) ev 10 s</b>: a group of two flashes, the whole group repeated once every ten seconds. <b>Fl (3) ev 15 s</b>: three flashes every fifteen seconds. <b>Occ</b>: a steady light eclipsed at intervals.</p>`},
+  log1919:{title:"Station Log, Vol. III (1919)", html:()=>`<p class="hd">MERROW ISLAND LIGHT · STATION LOG · VOL. III</p><h3>March 1919</h3>
+    <div class="entry"><p><b>12 Mar.</b> Wind SW, fresh breeze. Light exhibited sunset to sunrise. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>13 Mar.</b> Wind S, strong breeze, sea rough. Oil boat put back by weather. Light exhibited. — E.C.</p></div>
+    <div class="entry"><p><b>14 Mar.</b> Wind SW, moderating. At low water M. went down to the landing to watch for the oil boat. The boat did not come. She did not come back up. Searched the shore and the rocks until dark. Light exhibited. — E.C.</p></div>
+    <div class="entry"><p><b>15 Mar.</b> Searched at low water. Nothing. Light exhibited. — E.C.</p></div>
+    <div class="entry"><p><b>16 Mar.</b> Big tide. Light exhibited. I saw her. — E.C.</p></div>`},
+  letter:{title:"Unsent letter", hand:true, html:()=>`<p>My dear Ada,</p><p>You ask again whether I will come ashore for good. I cannot, and I will not pretend to you that it is only the work.</p><p>I keep Margaret's things in the old sea chest at the foot of my bed. I set its lock to the day and the month the sea took her, so that I must think of it each time I open it. Twelve years, and I have never once had to look it up.</p><p>The young man, Wren, is steady. He does not ask questions, which is a kindness.</p><p>Your loving brother, Elias</p><p style="font-size:17px;color:#6a5a40">(The envelope is addressed but has no stamp.)</p>`},
+  journal:{title:"Elias Crane's private journal", hand:true, html:()=>`<p><i>These pages are not the log. The log is for the Board.</i></p>
+    <div class="entry"><p>They come at the big tides, new moon and full, and for a night or two either side. They come up out of the water onto the north rocks and stand at the line of the weed and look up at the light. While it turns, they come no higher.</p></div>
+    <div class="entry"><p>It is not the brightness they mind. It is the character. Two and dark, two and dark, every ten seconds, as it has been since the light was built. Twice in twenty years I let the rhythm go wrong while the clockwork was mended, and both times they came up past the weed. A wrong rhythm is no light to them at all.</p></div>
+    <div class="entry"><p>The change gears are wearing. The pinion has lost the edge of a tooth. The spare set is in the cabinet in the watch room. I have set the cabinet's lock to the one thing that must be done every four hours of every night, whatever else happens.</p></div>
+    <div class="entry"><p>She was among them again tonight. She stands a little apart from the others. She has not aged.</p></div>
+    <div class="entry"><p style="transform:rotate(-1deg)">The glass is falling faster than I have ever seen it, and the sea is getting up. She is on the rocks and she is calling me by name. Wren has the light. I am going down to her.</p></div>`},
+  wrennote:{title:"Note on Wren's desk", hand:true, html:()=>`<p>For whoever finds this.</p><p>Everything in the log after the night he went down is my writing, not his. I am sorry for it. I could not put it down in writing that he was gone. Not to the Board. Not to anyone.</p><p>I have set the lock on my box to the date of that night. Then I can never pretend I don't remember it.</p><p style="text-align:right">T.W.</p>`},
+  diary:{title:"Tom Wren's diary", hand:true, html:()=>`
+    <div class="entry"><p><b>8th.</b> I have written up yesterday in the log as if he wrote it. I copied his hand from the pages before. I couldn't think what the weather had been, so I put down what it was the day before.</p></div>
+    <div class="entry"><p><b>9th.</b> I wound the clock at eight and at midnight. At four the weight was already up. I did not wind it at four. Someone did.</p></div>
+    <div class="entry"><p><b>11th.</b> Wet footprints on the tower stair this morning. Bare feet. They go up to the clockwork and back down, and out of the door toward the north rocks.</p></div>
+    <div class="entry"><p><b>12th.</b> Sent "all well" on the wireless again. I can't keep lying to them. I've stopped answering.</p></div>
+    <div class="entry"><p><b>13th.</b> The white drum ran dry tonight. Elias always said there was nothing to choose between the other two, but I can't tell which is which. The red bands and the green look the same dull brown to me; he used to laugh about it. I opened the one with the dent in its side.</p></div>
+    <div class="entry"><p><b>15th.</b> The glass went down very fast tonight, as fast as the night he went, but nothing came up out of the water. Small tide. Elias said they only come at the big ones.</p></div>
+    <div class="entry"><p><b>19th.</b> Six nights from the dented drum and the lamp has never burned better.</p></div>
+    <div class="entry"><p><b>20th.</b> The lamp choked at two. The flame went blue and died. Salt. I opened the drain cock and let the burner run off, like the book says, and filled again from the same drum, and it burned an hour and choked again.</p><p>Six clean nights and then salt. Elias always told me to draw from the top of a drum, because sea water is heavier and sinks to the bottom. I have drawn that drum right down, and what's at the bottom of it is the sea.</p><p>There is one drum left that nobody has opened. It must be clean.</p><p>He is on the rocks. He is waving to me. I am going down to bring him back up.</p></div>`},
+  morse:{title:"Morse card (Wren's)", html:()=>`<p class="hd">INTERNATIONAL CODE · KEPT INSIDE THE LID</p><h3>Morse</h3>${morseTable()}`},
+  manual:{title:"Instructions to Keepers (extract)", html:()=>`<p class="hd">NORTHERN LIGHTS AND COAST BOARD</p><h3>Instructions to Keepers (extract)</h3>
+    <p><b>§ 41. Relighting the lamp after a failure.</b></p>
+    <p>(a) Open the drain cock beneath the reservoir and let all fouled oil run off into the bucket.<br>(b) Close the drain cock. Oil poured in with the cock open runs straight through and is lost.<br>(c) Fill the reservoir with clean oil only.<br>(d) Trim the wick level with the wick scissors. An untrimmed wick smokes the chimney and must be put out and trimmed.<br>(e) Light the wick at a low flame.<br>(f) Allow the chimney to warm for half a minute before raising the flame to full.</p>
+    <p><b>§ 52. The rotating apparatus.</b></p>
+    <p>The lens is turned by clockwork driven by a falling weight, which must be wound every four hours. When correctly weighted, the weight drum makes <b>one revolution per minute</b>.</p>
+    <p>The speed of the lens is set by a pair of change gears: the <b>driver</b>, on the drum shaft, and the <b>pinion</b>, on the lens shaft.</p>
+    <p style="text-align:center;font-size:18px">lens revolutions per minute = drum revolutions per minute × (teeth on driver ÷ teeth on pinion)</p>
+    <p>Change gears are only to be fitted with the brake applied.</p>`},
+  lens:{title:"Plan of the lens", html:()=>`<p class="hd">CHANCE BROS. · FIRST ORDER · 1894</p><h3>Merrow Island Lens · Plan View</h3>${lensSVG()}<p>Four bull's-eye panels, <b>A</b>, <b>B</b>, <b>C</b> and <b>D</b>, mounted in two pairs on opposite faces of the lens. As a pair sweeps past an observer it is seen as one group of two flashes.</p>`},
+  log1931:{title:"Station Log, October 1931", html:()=>`<p class="hd">MERROW ISLAND LIGHT · STATION LOG</p><h3>October 1931</h3>
+    <div class="entry"><p><b>1 Oct.</b> Wind NW, moderate breeze. Clock wound 2000, 0000, 0400. Light exhibited sunset to sunrise. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>2 Oct.</b> Wind W, fresh breeze. Stores landed from <i>Ellen Rae</i>. Opened the white drum. Light exhibited. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>4 Oct.</b> Wind W, gentle breeze. Glass steady. Light exhibited. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>6 Oct.</b> Wind SW, gentle breeze. Glass steady. Light exhibited. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>7 Oct.</b> Wind SW, gentle breeze. Glass steady. Light exhibited. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>8 Oct.</b> Wind W, moderate breeze. Light exhibited. Oil 6 pints. — E.C.</p></div>
+    <div class="entry"><p><b>13 Oct.</b> Wind NW, moderate breeze. White drum empty. Opened another. Light exhibited. — E.C.</p></div>
+    <div class="entry"><p><b>15 Oct.</b> Wind NW, strong breeze. Glass falling fast. Small tide. Light exhibited. — E.C.</p></div>
+    <div class="entry"><p><b>20 Oct.</b> Lamp failed 0200. Salt in oil. Relit. Failed 0300. — E.C.</p></div>
+    <p style="font-size:14px;color:#5a4a30">There are no entries after the 20th. Yet the light has been seen every night since.</p>`},
+  drumnote:{title:"Chalked on the oil store door", html:()=>`<p style="font-family:var(--hand);font-size:24px;text-align:center">DRAW FROM THE TOP</p><p style="font-size:14px;text-align:center">In Elias's hand. Underneath, smaller and newer: <span style="font-family:var(--hand);font-size:20px">water sinks</span>.</p>`}
+};
+const DOC_ORDER=["orders","delivery","doornote","memorial","tides","baro","lightlist","log1919","letter","journal","wrennote","diary","morse","manual","lens","log1931","drumnote"];
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+function freshState(){
+  return {
+    area:"ext", x:0, z:39, yaw:0, pitch:0,
+    items:{orders:1, matches:1, torch:1},
+    docs:{orders:1},
+    flags:{}, fired:{},
+    torch:true,
+    oil:null, // null = no can; "empty" | "clean" | "salt"
+    clock:{brake:false, driver:60, pinion:20, wound:true, running:true, broken:false, spares:[], crank:false},
+    lamp:{res:"clean", cock:"closed", wick:"trimmed", flame:"full", litAt:0},
+    finale:{on:false, t:0, done:false},
+    play:0
+  };
+}
+let S=freshState();
+let checkpoint=null;
+
+/* =====================================================================
+   RENDERER
+   ===================================================================== */
+const canvas=$("gl");
+const renderer=new THREE.WebGLRenderer({canvas, antialias:false, powerPreference:"high-performance"});
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.0;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(68,1,.05,420);
+scene.add(camera);
+function resize(){
+  const w=window.innerWidth, h=window.innerHeight;
+  const pr=Math.min(1, (window.devicePixelRatio||1))*0.5;
+  renderer.setPixelRatio(pr); renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize); resize();
+(function grain(){ const g=$("grain").getContext("2d"), d=g.createImageData(320,180), r=rnd(77); for(let i=0;i<d.data.length;i+=4){ const v=r()*255; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; } g.putImageData(d,0,0); })();
+
+// torch
+const torch=new THREE.SpotLight(0xfff0d8,55,20,.48,.62,1.7);
+torch.castShadow=true; torch.shadow.mapSize.set(512,512); torch.shadow.bias=-.0006; torch.shadow.camera.near=.1;
+torch.position.set(.16,-.2,.05); camera.add(torch); camera.add(torch.target); torch.target.position.set(.04,-.06,-1);
+const torchFill=new THREE.PointLight(0xfff0d8,.5,4,2); torchFill.position.set(0,0,0); camera.add(torchFill);
+
+/* =====================================================================
+   TEXTURES & MATERIALS
+   ===================================================================== */
+function tex(w,h,draw,rep){ const c=document.createElement("canvas"); c.width=w; c.height=h; draw(c.getContext("2d"),w,h); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestMipmapLinearFilter; if(rep) t.repeat.set(rep[0],rep[1]); return t; }
+function noise(g,w,h,amt,seed){ const r=rnd(seed); const d=g.getImageData(0,0,w,h); for(let i=0;i<d.data.length;i+=4){ const n=(r()-.5)*amt; d.data[i]+=n; d.data[i+1]+=n; d.data[i+2]+=n; } g.putImageData(d,0,0); }
+function stains(g,w,h,n,seed,col){ const r=rnd(seed); for(let i=0;i<n;i++){ const x=r()*w,y=r()*h,rad=8+r()*50; const gr=g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,col); gr.addColorStop(1,"rgba(0,0,0,0)"); g.fillStyle=gr; g.fillRect(x-rad,y-rad,rad*2,rad*2); } }
+function planks(g,w,h,base,seed){ const r=rnd(seed); const n=8; for(let i=0;i<n;i++){ const y=i*h/n, b=base+r()*20; g.fillStyle=`rgb(${b+28},${b+6},${b-18})`; g.fillRect(0,y,w,h/n); g.fillStyle="rgba(0,0,0,.5)"; g.fillRect(0,y,w,2); for(let k=0;k<5;k++){ g.strokeStyle=`rgba(40,22,10,${.12+r()*.2})`; g.beginPath(); const yy=y+r()*h/n; g.moveTo(0,yy); g.bezierCurveTo(w*.3,yy+r()*6-3,w*.6,yy+r()*6-3,w,yy+r()*4-2); g.stroke(); } g.fillStyle="rgba(0,0,0,.55)"; g.fillRect(r()*w,y,2,h/n); } }
+const T={
+  floor:tex(256,256,(g,w,h)=>{ planks(g,w,h,62,3); noise(g,w,h,20,4); stains(g,w,h,6,5,"rgba(0,0,0,.3)"); }),
+  pier:tex(256,256,(g,w,h)=>{ planks(g,w,h,48,8); noise(g,w,h,26,9); stains(g,w,h,10,10,"rgba(20,30,20,.45)"); }),
+  plaster:tex(256,256,(g,w,h)=>{ g.fillStyle="#9d978a"; g.fillRect(0,0,w,h); noise(g,w,h,22,11); stains(g,w,h,14,12,"rgba(70,60,35,.35)"); stains(g,w,h,6,13,"rgba(40,50,40,.35)"); }),
+  stone:tex(256,256,(g,w,h)=>{ g.fillStyle="#8e8a80"; g.fillRect(0,0,w,h); const r=rnd(14); for(let y=0;y<h;y+=32){ const off=(y/32%2)*24; for(let x=-48;x<w;x+=48){ g.strokeStyle="rgba(40,36,30,.55)"; g.lineWidth=2; g.strokeRect(x+off,y,48,32); g.fillStyle=`rgba(${r()*30},${r()*30},${r()*20},.12)`; g.fillRect(x+off+2,y+2,44,28);} } noise(g,w,h,26,15); stains(g,w,h,12,16,"rgba(50,45,20,.4)"); }),
+  iron:tex(64,64,(g,w,h)=>{ g.fillStyle="#2b2d2f"; g.fillRect(0,0,w,h); noise(g,w,h,30,17); stains(g,w,h,6,18,"rgba(110,60,30,.4)"); }),
+  grass:tex(128,128,(g,w,h)=>{ g.fillStyle="#2a3125"; g.fillRect(0,0,w,h); const r=rnd(40); for(let i=0;i<900;i++){ g.fillStyle=`rgba(${60+r()*40},${70+r()*40},${45+r()*20},.5)`; g.fillRect(r()*w,r()*h,1,2+r()*4);} noise(g,w,h,20,41); }),
+  gravel:tex(64,64,(g,w,h)=>{ g.fillStyle="#4b473e"; g.fillRect(0,0,w,h); noise(g,w,h,50,45); }),
+  rock:tex(128,128,(g,w,h)=>{ g.fillStyle="#3a3c3e"; g.fillRect(0,0,w,h); noise(g,w,h,50,42); stains(g,w,h,12,43,"rgba(0,0,0,.4)"); }),
+  cliff:tex(128,128,(g,w,h)=>{ g.fillStyle="#34363a"; g.fillRect(0,0,w,h); const r=rnd(60); for(let i=0;i<40;i++){ g.strokeStyle="rgba(0,0,0,.4)"; g.beginPath(); g.moveTo(r()*w,0); g.lineTo(r()*w,h); g.stroke(); } noise(g,w,h,40,61); }),
+  slate:tex(128,128,(g,w,h)=>{ g.fillStyle="#2b2d31"; g.fillRect(0,0,w,h); for(let y=0;y<h;y+=12){ g.fillStyle="rgba(0,0,0,.5)"; g.fillRect(0,y,w,1); for(let x=(y/12%2)*8;x<w;x+=16) g.fillRect(x,y,1,12);} noise(g,w,h,22,19); }),
+  wallext:tex(128,128,(g,w,h)=>{ g.fillStyle="#a8a294"; g.fillRect(0,0,w,h); noise(g,w,h,28,20); stains(g,w,h,10,21,"rgba(40,50,40,.45)"); }),
+  stripes:tex(64,256,(g,w,h)=>{ for(let i=0;i<8;i++){ g.fillStyle=i%2?"#7d2a22":"#cfc8b8"; g.fillRect(0,i*h/8,w,h/8);} noise(g,w,h,30,46); stains(g,w,h,20,47,"rgba(20,20,10,.45)"); }),
+  crate:tex(64,64,(g,w,h)=>{ planks(g,w,h,70,22); g.strokeStyle="rgba(0,0,0,.6)"; g.lineWidth=3; g.strokeRect(2,2,w-4,h-4); g.beginPath(); g.moveTo(2,2); g.lineTo(w-2,h-2); g.stroke(); noise(g,w,h,20,23); }),
+  darkwood:tex(128,128,(g,w,h)=>{ planks(g,w,h,34,24); noise(g,w,h,16,25); }),
+  bed:tex(64,64,(g,w,h)=>{ g.fillStyle="#7b7466"; g.fillRect(0,0,w,h); for(let i=0;i<w;i+=8){ g.fillStyle="rgba(60,50,40,.3)"; g.fillRect(i,0,4,h);} noise(g,w,h,18,26); stains(g,w,h,4,27,"rgba(40,30,20,.4)"); }),
+  sea:tex(128,128,(g,w,h)=>{ g.fillStyle="#0b1418"; g.fillRect(0,0,w,h); const r=rnd(70); for(let i=0;i<300;i++){ g.fillStyle=`rgba(120,150,160,${r()*.12})`; g.fillRect(r()*w,r()*h,6+r()*14,1); } },[60,60]),
+  paper:tex(64,84,(g,w,h)=>{ g.fillStyle="#d8cfb4"; g.fillRect(0,0,w,h); g.strokeStyle="rgba(40,30,60,.7)"; const r=rnd(28); for(let y=12;y<h-6;y+=7){ g.beginPath(); g.moveTo(6,y); for(let x=6;x<w-8;x+=4) g.lineTo(x,y+(r()-.5)*2); g.stroke(); } }),
+  weed:tex(64,64,(g,w,h)=>{ g.fillStyle="#1d2416"; g.fillRect(0,0,w,h); noise(g,w,h,30,29); })
+};
+function drumTex(band){ return tex(64,64,(g,w,h)=>{ g.fillStyle="#3c3f40"; g.fillRect(0,0,w,h); noise(g,w,h,26,31); stains(g,w,h,8,32,"rgba(110,60,30,.45)"); g.fillStyle=band; g.fillRect(0,h*.42,w,h*.16); g.fillStyle="rgba(0,0,0,.4)"; g.fillRect(0,h*.15,w,2); g.fillRect(0,h*.85,w,2); }); }
+const M={};
+function mat(t,o){ return new THREE.MeshStandardMaterial(Object.assign({map:t,roughness:.9,metalness:0},o||{})); }
+M.floor=mat(T.floor,{roughness:.8}); M.pier=mat(T.pier); M.plaster=mat(T.plaster); M.stone=mat(T.stone); M.iron=mat(T.iron,{metalness:.5,roughness:.6});
+M.grass=mat(T.grass,{roughness:1}); M.gravel=mat(T.gravel,{roughness:1}); M.rock=mat(T.rock,{roughness:1}); M.cliff=mat(T.cliff,{roughness:1}); M.slate=mat(T.slate);
+M.wallext=mat(T.wallext); M.stripes=mat(T.stripes,{roughness:.85}); M.crate=mat(T.crate); M.darkwood=mat(T.darkwood,{roughness:.7}); M.bed=mat(T.bed);
+M.paper=mat(T.paper); M.brass=new THREE.MeshStandardMaterial({color:0x9a7a40,metalness:.8,roughness:.35}); M.black=new THREE.MeshBasicMaterial({color:0x000000});
+M.glass=new THREE.MeshStandardMaterial({color:0x8fa6b0,transparent:true,opacity:.12,roughness:.1,metalness:.1,side:THREE.DoubleSide,depthWrite:false});
+M.wet=new THREE.MeshStandardMaterial({color:0x050607,roughness:.15,metalness:.2,transparent:true,opacity:.55,depthWrite:false});
+M.figure=new THREE.MeshStandardMaterial({color:0x2b2a28,roughness:.45,metalness:.1});
+M.hidden=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+
+/* =====================================================================
+   AREA BUILDING HELPERS
+   ===================================================================== */
+const AREAS={};
+function newArea(id,opts){
+  const a=Object.assign({id, group:new THREE.Group(), boxes:[], circles:[], rects:[], inside:null, its:[], spawns:{}, fog:[0x050403,.09], bg:0x020202, surface:"wood", ambience:"in", update:null}, opts||{});
+  AREAS[id]=a; return a;
+}
+function mesh(a,geo,m,x,y,z,o){
+  const me=new THREE.Mesh(geo,m); me.position.set(x,y,z);
+  o=o||{};
+  if(o.ry) me.rotation.y=o.ry; if(o.rx) me.rotation.x=o.rx; if(o.rz) me.rotation.z=o.rz;
+  me.castShadow=o.cast!==false; me.receiveShadow=true;
+  (o.parent||a.group).add(me);
+  if(o.it){ me.userData.it=o.it; a.its.push(me); }
+  return me;
+}
+function box(a,w,h,d,m,x,y,z,o){
+  o=o||{};
+  const me=mesh(a,new THREE.BoxGeometry(w,h,d),m,x,y+h/2,z,o);
+  if(o.col) a.boxes.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2});
+  return me;
+}
+function proxy(a,w,h,d,x,y,z,it){ const me=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M.hidden); me.position.set(x,y,z); me.userData.it=it; a.group.add(me); a.its.push(me); return me; }
+function plane(a,w,d,m,x,y,z,rx,o){ const me=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m); me.position.set(x,y,z); me.rotation.x=rx; if(o&&o.ry) me.rotation.y=o.ry; me.receiveShadow=true; a.group.add(me); return me; }
+function repeatMat(base,rx,ry){ const m=base.clone(); m.map=base.map.clone(); m.map.needsUpdate=true; m.map.repeat.set(rx,ry); return m; }
+function footprints(a,pts,y,rot){ for(let i=0;i<pts.length;i++){ const [x,z]=pts[i]; const f=new THREE.Mesh(new THREE.CircleGeometry(.07,8),M.wet); f.scale.set(1,1.8,1); f.rotation.x=-Math.PI/2; f.rotation.z=(rot||0)+(i%2?.15:-.15); f.position.set(x+(i%2?.09:-.09),y+.004,z); a.group.add(f); } }
+function figure(parent,x,y,z,s){ const g=new THREE.Group(); const b=new THREE.Mesh(new THREE.CapsuleGeometry(.2,1.0,4,8),M.figure); b.position.y=.8; g.add(b); const h=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),M.figure); h.position.y=1.58; g.add(h); g.position.set(x,y,z); if(s) g.scale.setScalar(s); g.traverse(o=>{ o.castShadow=true; }); parent.add(g); return g; }
+function circleRoom(a,r,h,wallMat,floorMat,ceilMat){
+  const wallM=wallMat.clone(); wallM.side=THREE.BackSide; wallM.map=wallMat.map.clone(); wallM.map.needsUpdate=true; wallM.map.repeat.set(5,1.2);
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,28,1,true),wallM); wall.position.y=h/2; wall.receiveShadow=true; a.group.add(wall);
+  const fm=floorMat.clone(); fm.map=floorMat.map.clone(); fm.map.needsUpdate=true; fm.map.repeat.set(2,2);
+  const fl=new THREE.Mesh(new THREE.CircleGeometry(r,28),fm); fl.rotation.x=-Math.PI/2; fl.receiveShadow=true; a.group.add(fl);
+  if(ceilMat){ const ce=new THREE.Mesh(new THREE.CircleGeometry(r,28),ceilMat); ce.rotation.x=Math.PI/2; ce.position.y=h; a.group.add(ce); }
+  a.inside={x:0,z:0,r:r};
+}
+
+/* =====================================================================
+   EXTERIOR
+   ===================================================================== */
+const beamGroup=new THREE.Group();
+const signal={light:null, mesh:null, ext:null, lantern:null};
+let rainSegs=null;
+function buildExterior(){
+  const a=newArea("ext",{fog:[0x10161c,.02], bg:0x0f141a, surface:"grass", ambience:"out"});
+  const g=a.group;
+  a.rects=[{x0:-21.4,x1:21.4,z0:-30.6,z1:30.6},{x0:-1.1,x1:1.1,z0:30,z1:42}];
+  // ground
+  const gm=repeatMat(M.grass,24,30);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(44,64,44,64),gm);
+  const gp=ground.geometry.attributes.position, r=rnd(44);
+  for(let i=0;i<gp.count;i++){ gp.setZ(i,(r()-.5)*.14); }
+  ground.geometry.computeVertexNormals(); ground.rotation.x=-Math.PI/2; ground.position.set(0,-.02,1); ground.receiveShadow=true; g.add(ground);
+  // cliffs
+  const cm=repeatMat(M.cliff,10,3);
+  box(a,46,7,1,cm,0,-7,32,{cast:false}); box(a,46,7,1,cm,0,-7,-31.5,{cast:false});
+  box(a,1,7,65,cm,22.5,-7,.5,{cast:false}); box(a,1,7,65,cm,-22.5,-7,.5,{cast:false});
+  for(let i=0;i<70;i++){ const s=.4+r()*1.2; const ang=r()*Math.PI*2; let x,z; const side=i%4; if(side===0){x=(r()-.5)*42; z=-31.2-r()*.8;} else if(side===1){x=(r()-.5)*42; z=31.2+r()*.8; if(Math.abs(x)<2.4) x+=4;} else if(side===2){x=21.9+r()*.6; z=(r()-.5)*60;} else {x=-21.9-r()*.6; z=(r()-.5)*60;} mesh(a,new THREE.DodecahedronGeometry(s,0),M.rock,x,s*.2,z,{rx:r()*3,ry:r()*3}); }
+  // sea & north rocks
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({map:T.sea,color:0x6a8088,roughness:.3,metalness:.25}));
+  sea.rotation.x=-Math.PI/2; sea.position.y=-6; g.add(sea); a.sea=sea;
+  for(let i=0;i<16;i++){ const s=1+r()*2.4; mesh(a,new THREE.DodecahedronGeometry(s,0),M.rock,24+r()*14,-6+s*.35,-36-r()*10,{rx:r()*3,ry:r()*3}); }
+  const weed=new THREE.Mesh(new THREE.PlaneGeometry(30,4),new THREE.MeshStandardMaterial({map:T.weed,roughness:1})); weed.rotation.x=-Math.PI/2; weed.position.set(30,-5.7,-34); g.add(weed);
+  a.rockFigure=figure(g,29,-5.2,-37,1.1); a.rockFigure.visible=false;
+  // pier
+  box(a,2.4,.25,12,repeatMat(M.pier,1,5),0,-.24,36);
+  for(let i=0;i<7;i++){ for(const s of [-1,1]) box(a,.18,1.4,.18,M.darkwood,s*1.25,-1.2,30.5+i*1.9); }
+  // crate at landing
+  box(a,.8,.6,.6,M.crate,.6,0,37.8,{it:"crate"});
+  // path
+  const pm=repeatMat(M.gravel,1,20);
+  plane(a,1.6,46,pm,0,.01,7.5,-Math.PI/2);
+  plane(a,2.4,1.4,repeatMat(M.gravel,2,1),-1.2,.012,7.5,-Math.PI/2);
+  const sp=plane(a,1.2,10,repeatMat(M.gravel,1,5),3.7,.012,-6,-Math.PI/2); sp.rotation.z=-.62;
+  const mp=plane(a,1.2,15,repeatMat(M.gravel,1,7),7,.011,12.5,-Math.PI/2); mp.rotation.z=-1.25;
+  // fence posts by path along east cliff
+  for(let i=0;i<9;i++) box(a,.12,1.1,.12,M.darkwood,17.6,0,-20+i*5);
+  // cottage
+  const cx=-7.6, cz=7.5;
+  box(a,10.8,3,9,repeatMat(M.wallext,4,1),cx,0,cz,{col:true});
+  const roof=new THREE.Mesh(new THREE.CylinderGeometry(.01,6.6,2.4,4,1),repeatMat(M.slate,4,2)); roof.rotation.y=Math.PI/4; roof.scale.set(1.18,1,.97); roof.position.set(cx,4.2,cz); roof.castShadow=true; g.add(roof);
+  box(a,.8,1.6,.8,M.stone,cx-3,4.2,cz-2.5);
+  box(a,.08,2.1,1.05,M.darkwood,-2.18,0,7.5,{it:"cottageDoor"});
+  for(const [x,z,ry] of [[-2.17,4.6,Math.PI/2],[-2.17,10.4,Math.PI/2],[-13.03,6,-Math.PI/2],[-5,2.97,Math.PI],[-10,2.97,Math.PI]]){ plane(a,.9,1.1,new THREE.MeshStandardMaterial({color:0x06080a,roughness:.15,metalness:.3}),x,1.6,z,0,{ry}); }
+  const note=plane(a,.18,.24,M.paper,-2.13,1.45,7.05,0,{ry:Math.PI/2}); note.userData.it="doorNote"; a.its.push(note);
+  // shed
+  box(a,4,2.6,4,repeatMat(M.wallext,2,1),7,0,-7,{col:true});
+  const sroof=new THREE.Mesh(new THREE.BoxGeometry(4.4,.2,4.4),M.slate); sroof.position.set(7,2.7,-7); sroof.rotation.x=.08; sroof.castShadow=true; g.add(sroof);
+  box(a,1,2,.08,M.darkwood,7,0,-4.97,{it:"shedDoor"});
+  // tower
+  const tw=new THREE.Mesh(new THREE.CylinderGeometry(2.3,3.2,24,24,1),M.stripes); tw.position.set(0,12,-19); tw.castShadow=true; tw.receiveShadow=true; g.add(tw);
+  a.circles.push({x:0,z:-19,r:3.3});
+  const gal=new THREE.Mesh(new THREE.CylinderGeometry(3.1,3.1,.3,24),M.iron); gal.position.set(0,24.15,-19); g.add(gal);
+  const lan=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,2.4,12,1,true),new THREE.MeshStandardMaterial({color:0xffe6a8,emissive:0xffd27a,emissiveIntensity:2.2,transparent:true,opacity:.85,side:THREE.DoubleSide}));
+  lan.position.set(0,25.5,-19); g.add(lan); a.lantern=lan;
+  const troof=new THREE.Mesh(new THREE.ConeGeometry(2,1.6,12),M.iron); troof.position.set(0,27.5,-19); g.add(troof);
+  const lampL=new THREE.PointLight(0xffd88a,140,70,1.6); lampL.position.set(0,25.5,-19); g.add(lampL); a.lampLight=lampL;
+  box(a,1.2,2.2,.12,M.darkwood,0,0,-15.68,{it:"towerDoor"});
+  // beam
+  const beamGeo=new THREE.ConeGeometry(4.5,70,20,1,true); beamGeo.translate(0,-35,0); beamGeo.rotateZ(Math.PI/2);
+  const beamMat=new THREE.MeshBasicMaterial({color:0xfff1c6,transparent:true,opacity:.11,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  for(const ang of [0,.26,Math.PI,Math.PI+.26]){ const b=new THREE.Mesh(beamGeo,beamMat); b.rotation.y=ang; beamGroup.add(b); }
+  beamGroup.position.set(0,25.5,-19); g.add(beamGroup);
+  // memorial
+  box(a,1.1,1.2,1.1,M.stone,13,0,14,{col:true,it:"plinth"});
+  const robe=new THREE.Mesh(new THREE.ConeGeometry(.42,1.5,10),M.stone); robe.position.set(13,1.95,14); robe.castShadow=true; g.add(robe);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.17,10,8),M.stone); head.position.set(13,2.85,14); g.add(head);
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.6,6),M.stone); arm.position.set(13.12,2.45,13.62); arm.rotation.x=1.2; g.add(arm);
+  const lant=new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18),M.iron); lant.position.set(13.12,2.42,13.3); g.add(lant);
+  const lantTop=new THREE.Mesh(new THREE.ConeGeometry(.13,.12,4),M.iron); lantTop.position.set(13.12,2.6,13.3); lantTop.rotation.y=Math.PI/4; g.add(lantTop);
+  proxy(a,.5,.55,.5,13.12,2.42,13.3,"statueLantern");
+  box(a,1.6,.45,.5,M.stone,11.2,0,13.2,{col:true});
+  // rain
+  const N=1300, pos=new Float32Array(N*6), rr=rnd(50);
+  for(let i=0;i<N;i++){ const x=(rr()-.5)*30, y=rr()*14, z=(rr()-.5)*30; pos.set([x,y,z,x+.05,y-.4,z],i*6); }
+  const rg=new THREE.BufferGeometry(); rg.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  rainSegs=new THREE.LineSegments(rg,new THREE.LineBasicMaterial({color:0x9fb0c4,transparent:true,opacity:.14})); rainSegs.frustumCulled=false; rainSegs.raycast=()=>{}; g.add(rainSegs);
+  // moon
+  const moon=new THREE.DirectionalLight(0x8aa0c8,2.0); moon.position.set(-20,30,10); moon.target.position.set(0,0,0); moon.castShadow=true; moon.shadow.mapSize.set(1024,1024);
+  const sc=moon.shadow.camera; sc.left=-30; sc.right=30; sc.top=36; sc.bottom=-36; sc.far=90; g.add(moon); g.add(moon.target);
+  g.add(new THREE.HemisphereLight(0x3a4a60,0x101010,1.0));
+  // signal light on the rocks
+  const sm=new THREE.Mesh(new THREE.SphereGeometry(.5,8,6),new THREE.MeshBasicMaterial({color:0xfff2c0,fog:false})); sm.position.set(28,-4.2,-38); g.add(sm); sm.visible=false;
+  const sl=new THREE.PointLight(0xfff0c0,0,30,1.4); sl.position.copy(sm.position); g.add(sl);
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(1.4,10,8),new THREE.MeshBasicMaterial({color:0xffd890,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); sm.add(halo);
+  signal.ext={mesh:sm, light:sl};
+  // finale figures
+  a.figs=[[-15,-24],[16,-2],[-14,20],[15,24],[-6,-27]].map(([x,z])=>{ const f=figure(g,x,0,z,1); f.visible=false; f.userData.home={x,z}; return f; });
+  a.spawns={pier:{x:0,z:39,yaw:0}, cottage:{x:-1.3,z:7.5,yaw:-Math.PI/2}, shed:{x:7,z:-4.1,yaw:Math.PI}, tower:{x:0,z:-14.8,yaw:Math.PI}};
+  a.update=extUpdate;
+}
+
+/* =====================================================================
+   COTTAGE
+   ===================================================================== */
+function buildCottage(){
+  const a=newArea("cot",{fog:[0x060504,.09], surface:"wood"});
+  const g=a.group, W=12, D=9, H=2.5;
+  a.rects=[{x0:0,x1:W,z0:0,z1:D}];
+  plane(a,W,D,repeatMat(M.floor,4,3),W/2,0,D/2,-Math.PI/2);
+  plane(a,W,D,repeatMat(M.plaster,4,3),W/2,H,D/2,Math.PI/2);
+  const wm=repeatMat(M.plaster,4,1);
+  const wall=(x0,z0,x1,z1)=>{ const w=Math.abs(x1-x0)||.15, d=Math.abs(z1-z0)||.15; box(a,w,H,d,wm,(x0+x1)/2,0,(z0+z1)/2,{col:true}); };
+  wall(0,-.08,W,-.08); wall(0,D+.08,W,D+.08); wall(-.08,0,-.08,D);
+  wall(W+.08,0,W+.08,4); wall(W+.08,5,W+.08,D);
+  box(a,.08,2.1,1,M.darkwood,W+.02,0,4.5,{it:"cottageExit"});
+  // inner partition x=5 with doorways at z 1.5, 4.5, 7.5
+  wall(5,0,5,1); wall(5,2,5,4); wall(5,5,5,7); wall(5,8,5,D);
+  wall(0,3,5,3); wall(0,6,5,6);
+  for(const z of [1.5,4.5,7.5]) box(a,.2,.4,1,wm,5,2.1,z);
+  // main room
+  box(a,1.6,.78,1,M.darkwood,8.5,0,4.5,{col:true});
+  for(const [x,z] of [[7.6,4.5],[9.4,4.5]]) box(a,.42,.9,.42,M.darkwood,x,0,z,{col:true});
+  for(const x of [8.1,8.9]){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.13,.11,.02,12),new THREE.MeshStandardMaterial({color:0xcfc6b0,roughness:.5})); p.position.set(x,.79,4.5); g.add(p); }
+  box(a,1,.9,.7,M.iron,11.3,0,8.4,{col:true}); box(a,.18,1.6,.18,M.iron,11.5,.9,8.6);
+  box(a,.5,2,1.6,M.darkwood,5.4,0,8.1,{col:true});
+  box(a,1.2,.1,.5,M.darkwood,8.5,1.6,.3);
+  plane(a,1,1.1,new THREE.MeshStandardMaterial({color:0x06080a,roughness:.1,metalness:.3}),8.5,1.6,.02,0);
+  footprints(a,[[8.5,.6],[8.2,1.2],[7.7,1.8],[7.1,2.5],[6.5,3.3],[6.1,4.2],[5.8,5.2],[5.6,6.2],[5.5,7.2],[4.6,7.5],[3.6,7.6]],0,0);
+  box(a,.9,2.1,.08,M.darkwood,8.5,0,.02);
+  // OFFICE z 0..3
+  box(a,1.4,.76,.7,M.darkwood,2,0,.5,{col:true});
+  const radio=box(a,.55,.35,.3,M.darkwood,1.6,.76,.45,{it:"radio"});
+  const dial=new THREE.Mesh(new THREE.CircleGeometry(.06,10),new THREE.MeshBasicMaterial({color:0x6a5520})); dial.position.set(1.6,.95,.605); g.add(dial);
+  const ll=plane(a,.2,.28,M.paper,2.45,.765,.55,-Math.PI/2); ll.rotation.z=.2; ll.userData.it="lightlist"; a.its.push(ll);
+  box(a,.5,.3,.3,M.brass,4.6,.9,.4,{it:"barograph"}); box(a,.6,.9,.4,M.darkwood,4.6,0,.4,{col:true});
+  const tt=plane(a,.6,.8,M.paper,3.5,1.5,.03,0); tt.userData.it="tides"; a.its.push(tt);
+  box(a,.35,2,1.6,M.darkwood,.2,0,2.1,{col:true});
+  for(let i=0;i<4;i++) box(a,.28,.32,.1+((i*7)%3)*.04,new THREE.MeshStandardMaterial({color:[0x4a2a1a,0x2a3a2a,0x3a2a3a,0x2a2a3a][i],roughness:.8}),.22,1.12,1.5+i*.14);
+  proxy(a,.5,.5,.8,.25,1.3,1.75,"log1919");
+  // ELIAS z 3..6
+  box(a,.95,.5,1.95,M.bed,.6,0,4.4,{col:true});
+  box(a,.85,.55,.5,M.darkwood,1.75,0,5.6,{col:true,it:"chest"});
+  box(a,.6,.75,.45,M.darkwood,3.8,0,3.3,{col:true});
+  const lt=plane(a,.18,.13,M.paper,3.8,.755,3.32,-Math.PI/2); lt.userData.it="letter"; a.its.push(lt);
+  plane(a,.8,1,new THREE.MeshStandardMaterial({color:0x06080a,roughness:.1,metalness:.3}),.02,1.5,4.5,0,{ry:Math.PI/2});
+  // WREN z 6..9
+  box(a,.95,.5,1.95,M.bed,.6,0,7.9,{col:true});
+  box(a,.75,.45,.45,M.darkwood,1.9,0,8.7,{col:true,it:"footlocker"});
+  box(a,.7,.75,.45,M.darkwood,3.9,0,8.7,{col:true});
+  const wn=plane(a,.16,.2,M.paper,3.9,.755,8.6,-Math.PI/2); wn.rotation.z=-.3; wn.userData.it="wrennote"; a.its.push(wn);
+  box(a,.35,1.1,.12,new THREE.MeshStandardMaterial({color:0x22262a,roughness:1}),4.7,.9,8.9);
+  // faint moonlight
+  const mo=new THREE.SpotLight(0x5f78a8,6,10,.7,.9,2); mo.position.set(8.5,2,-1.5); mo.target.position.set(7.5,0,3); g.add(mo,mo.target);
+  g.add(new THREE.AmbientLight(0x1a1a22,1.0));
+  a.spawns={front:{x:11.2,z:4.5,yaw:Math.PI/2}};
+}
+
+/* =====================================================================
+   OIL STORE
+   ===================================================================== */
+function buildShed(){
+  const a=newArea("sh",{fog:[0x050403,.12], surface:"stone"});
+  const g=a.group;
+  a.rects=[{x0:0,x1:4,z0:0,z1:4}];
+  plane(a,4,4,repeatMat(M.stone,2,2),2,0,2,-Math.PI/2);
+  plane(a,4,4,M.darkwood,2,2.4,2,Math.PI/2);
+  const wm=repeatMat(M.wallext,2,1);
+  box(a,4,2.4,.15,wm,2,0,-.07); box(a,.15,2.4,4,wm,-.07,0,2); box(a,.15,2.4,4,wm,4.07,0,2);
+  box(a,1.5,2.4,.15,wm,.75,0,4.07); box(a,1.5,2.4,.15,wm,3.25,0,4.07);
+  box(a,1,2,.08,M.darkwood,2,0,4.05,{it:"shedExit"});
+  const dn=plane(a,.4,.3,M.paper,3.2,1.5,3.99,0,{ry:Math.PI}); dn.userData.it="drumnote"; a.its.push(dn);
+  const drums=[["red",0x8a2a20,.8],["white",0xd8d4c8,2],["green",0x2f5a34,3.2]];
+  for(const [id,col,x] of drums){
+    const band=new THREE.Color(col).getStyle();
+    const d=mesh(a,new THREE.CylinderGeometry(.3,.3,.9,16),mat(drumTex(band),{metalness:.3,roughness:.6}),x,.45,.6,{it:"drum_"+id});
+    if(id==="red"){ const dent=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),new THREE.MeshStandardMaterial({color:0x1e1f20,roughness:.5})); dent.scale.set(1,.6,.35); dent.position.set(x+.08,.5,.88); g.add(dent); d.scale.set(1,1,.94); }
+    a.boxes.push({x0:x-.32,x1:x+.32,z0:.25,z1:.95});
+  }
+  box(a,.4,1.6,1.4,M.darkwood,3.75,0,2.3,{col:true});
+  box(a,.3,.6,.3,M.iron,3.7,1.6,2);
+  g.add(new THREE.AmbientLight(0x1a1a22,.8));
+  a.spawns={door:{x:2,z:3.4,yaw:0}};
+}
+
+/* =====================================================================
+   TOWER: BASE, WATCH ROOM, LANTERN
+   ===================================================================== */
+function stairsVisual(a,r,h,from,to){
+  const n=14; for(let i=0;i<n;i++){ const t=i/(n-1), ang=from+(to-from)*t; const x=Math.cos(ang)*(r-.55), z=Math.sin(ang)*(r-.55); const st=new THREE.Mesh(new THREE.BoxGeometry(1,.12,.4),M.stone); st.position.set(x,.15+t*h,z); st.rotation.y=-ang; st.castShadow=st.receiveShadow=true; a.group.add(st); }
+}
+function buildTowerBase(){
+  const a=newArea("tb",{fog:[0x050403,.1], surface:"stone"});
+  const g=a.group;
+  circleRoom(a,3,3.2,M.stone,M.stone,M.darkwood);
+  box(a,1.1,2.1,.1,M.darkwood,0,0,2.98,{it:"towerExit"});
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,3.2,10),M.iron); shaft.position.set(0,1.6,0); g.add(shaft);
+  a.circles.push({x:0,z:0,r:.45});
+  const wt=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.6,10),M.iron); wt.position.set(0,2.6,0); g.add(wt); a.weight=wt;
+  stairsVisual(a,3,3.2,-.3,-2.2);
+  proxy(a,1,2,1,2.3,1,-.3,"stairsUp");
+  footprints(a,[[0,2.4],[.5,1.9],[1.1,1.4],[1.7,.9],[2.2,.3],[2.4,-.3]],0,0);
+  box(a,1.3,.75,.5,M.darkwood,-2,0,-1,{col:true});
+  const mn=plane(a,.22,.3,M.paper,-2.1,.755,-1,-Math.PI/2); mn.rotation.z=.4; mn.userData.it="manual"; a.its.push(mn);
+  const can=new THREE.Group(); const cb=new THREE.Mesh(new THREE.CylinderGeometry(.11,.13,.32,10),M.iron); cb.position.y=.16; can.add(cb); const sp=new THREE.Mesh(new THREE.CylinderGeometry(.015,.03,.2,6),M.iron); sp.position.set(.1,.3,0); sp.rotation.z=-.8; can.add(sp); can.position.set(-1.55,.75,-1); g.add(can); a.can=can;
+  a.canProxy=proxy(a,.4,.45,.4,-1.55,.95,-1,"oilcan");
+  const bl=new THREE.PointLight(0xffa860,0,4,2); bl.position.set(0,2.8,0); g.add(bl);
+  g.add(new THREE.AmbientLight(0x18181e,.9));
+  a.spawns={door:{x:0,z:2.2,yaw:0}, stairs:{x:1.9,z:.6,yaw:Math.PI/2}};
+}
+const lensGroups=[];
+function buildLensInto(a,parent,y,scale){
+  const lg=new THREE.Group(); lg.position.set(0,y,0); lg.scale.setScalar(scale);
+  const core=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,1.3,16,1,true),new THREE.MeshStandardMaterial({color:0x6f8088,transparent:true,opacity:.16,roughness:.1,metalness:.2,side:THREE.DoubleSide,depthWrite:false}));
+  for(let k=0;k<6;k++){ const ring=new THREE.Mesh(new THREE.TorusGeometry(.63,.012,4,24),M.brass); ring.rotation.x=Math.PI/2; ring.position.y=-.6+k*.24; lg.add(ring); }
+  lg.add(core);
+  const panelMat=new THREE.MeshStandardMaterial({color:0xfff1c0,emissive:0xffd27a,emissiveIntensity:0,roughness:.2,metalness:.3});
+  for(const ang of [-.13,.13,Math.PI-.13,Math.PI+.13]){ const p=new THREE.Mesh(new THREE.BoxGeometry(.32,.5,.04),panelMat); p.position.set(Math.sin(ang)*.64,0,Math.cos(ang)*.64); p.rotation.y=ang; lg.add(p); }
+  lg.userData.panelMat=panelMat;
+  parent.add(lg); lensGroups.push(lg); return lg;
+}
+function buildWatchRoom(){
+  const a=newArea("tw",{fog:[0x050403,.1], surface:"wood"});
+  const g=a.group;
+  circleRoom(a,2.7,2.8,M.plaster,M.floor,M.darkwood);
+  // clockwork case
+  box(a,1.1,1.2,1.1,M.darkwood,0,0,0,{it:"clockwork"});
+  a.boxes.push({x0:-.6,x1:.6,z0:-.6,z1:.6});
+  const drum=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.5,14),M.brass); drum.rotation.z=Math.PI/2; drum.position.set(0,1.35,0); g.add(drum); a.drum=drum;
+  const gearA=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.04,24),M.brass); gearA.rotation.x=Math.PI/2; gearA.position.set(-.3,1.45,.58); g.add(gearA); a.gearA=gearA;
+  const gearB=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.04,16),M.brass); gearB.rotation.x=Math.PI/2; gearB.position.set(.12,1.45,.58); g.add(gearB); a.gearB=gearB;
+  const crank=new THREE.Mesh(new THREE.BoxGeometry(.04,.32,.04),M.iron); crank.position.set(.58,1.1,0); crank.geometry.translate(0,.14,0); g.add(crank); a.crankMesh=crank;
+  // desk
+  box(a,1.1,.76,.5,M.darkwood,-1.4,0,1.25,{col:true});
+  const lg=plane(a,.32,.22,M.paper,-1.5,.765,1.22,-Math.PI/2); lg.userData.it="log1931"; a.its.push(lg);
+  proxy(a,.4,.2,.1,-1.05,.6,1.52,"drawer");
+  // lens diagram on wall
+  const ld=plane(a,.5,.5,M.paper,-1.86,1.6,-1.86,0,{ry:Math.PI/4}); ld.userData.it="lens"; a.its.push(ld);
+  // cabinet
+  box(a,.7,1.4,.4,M.darkwood,1.55,0,-1.5,{col:true,it:"cabinet",ry:-.7});
+  // stairs down & ladder up
+  proxy(a,.9,1.2,.9,1.9,.6,1.6,"stairsDown");
+  box(a,.08,2.8,.08,M.iron,-.35,0,-2.2); box(a,.08,2.8,.08,M.iron,.35,0,-2.2);
+  for(let i=0;i<8;i++) box(a,.7,.04,.04,M.iron,0,.3+i*.32,-2.2);
+  proxy(a,.9,2.4,.5,0,1.2,-2.1,"ladderUp");
+  // small window
+  plane(a,.4,.6,new THREE.MeshStandardMaterial({color:0x07090c,roughness:.1,metalness:.4}),2.66,1.6,0,0,{ry:-Math.PI/2});
+  footprints(a,[[1.7,1.4],[1.2,1.1],[.8,.8]],0,0);
+  g.add(new THREE.AmbientLight(0x18181e,.9));
+  a.spawns={stairs:{x:1.5,z:1.2,yaw:Math.PI/2}, ladder:{x:0,z:-1.4,yaw:Math.PI}};
+}
+function buildLantern(){
+  const a=newArea("tl",{fog:[0x10161c,.025], bg:0x0f141a, surface:"iron", ambience:"high"});
+  const g=a.group;
+  const fl=new THREE.Mesh(new THREE.CircleGeometry(2.4,24),M.iron); fl.rotation.x=-Math.PI/2; fl.receiveShadow=true; g.add(fl);
+  a.inside={x:0,z:0,r:2.3};
+  const glass=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.4,2.6,12,1,true),M.glass); glass.position.y=1.3; g.add(glass);
+  for(let i=0;i<12;i++){ const ang=i/12*Math.PI*2; box(a,.06,2.6,.06,M.iron,Math.sin(ang)*2.38,0,Math.cos(ang)*2.38,{cast:false}); }
+  const rail=new THREE.Mesh(new THREE.TorusGeometry(2.4,.03,6,24),M.iron); rail.rotation.x=Math.PI/2; rail.position.y=.5; g.add(rail);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(2.6,1.2,12,1,true),new THREE.MeshStandardMaterial({color:0x1a1b1c,side:THREE.DoubleSide,metalness:.5,roughness:.6})); roof.position.y=3.2; g.add(roof);
+  // pedestal, lamp, lens
+  box(a,.7,.8,.7,M.iron,0,0,0); a.circles.push({x:0,z:0,r:.95});
+  const flame=new THREE.Mesh(new THREE.SphereGeometry(.08,8,6),new THREE.MeshBasicMaterial({color:0xffc070})); flame.position.set(0,1.45,0); flame.scale.set(1,1.8,1); g.add(flame); a.flame=flame;
+  const fl2=new THREE.PointLight(0xffc070,10,12,1.6); fl2.position.set(0,1.45,0); fl2.castShadow=true; fl2.shadow.mapSize.set(512,512); g.add(fl2); a.flameLight=fl2;
+  a.lens=buildLensInto(a,g,1.45,1);
+  proxy(a,1.6,1.8,1.6,0,1.3,0,"lamp");
+  // hatch
+  const hatch=new THREE.Mesh(new THREE.PlaneGeometry(.7,.7),M.black); hatch.rotation.x=-Math.PI/2; hatch.position.set(0,.005,1.6); g.add(hatch);
+  proxy(a,.8,.5,.8,0,.25,1.6,"hatchDown");
+  // world outside (40 m below)
+  const out=new THREE.Group(); out.position.set(0,-24.5,19); g.add(out);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(44,64),repeatMat(M.grass,20,30)); ground.rotation.x=-Math.PI/2; ground.position.set(0,0,1); out.add(ground);
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({map:T.sea,color:0x6a8088,roughness:.3,metalness:.25})); sea.rotation.x=-Math.PI/2; sea.position.y=-6; out.add(sea);
+  const cot=new THREE.Mesh(new THREE.BoxGeometry(10.8,3,9),M.wallext); cot.position.set(-7.6,1.5,7.5); out.add(cot);
+  const sh=new THREE.Mesh(new THREE.BoxGeometry(4,2.6,4),M.wallext); sh.position.set(7,1.3,-7); out.add(sh);
+  const r=rnd(90); for(let i=0;i<16;i++){ const s=1+r()*2.4; const rk=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),M.rock); rk.position.set(24+r()*14,-6+s*.35,-36-r()*10); out.add(rk); }
+  const cl=new THREE.Mesh(new THREE.BoxGeometry(46,6.5,65),M.cliff); cl.position.set(0,-3.25,.5); out.add(cl);
+  const sm=new THREE.Mesh(new THREE.SphereGeometry(.5,8,6),new THREE.MeshBasicMaterial({color:0xfff2c0,fog:false})); sm.position.set(28,-4.2,-38); out.add(sm); sm.visible=false;
+  const sl=new THREE.PointLight(0xfff0c0,0,40,1.2); sl.position.copy(sm.position); out.add(sl);
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(1.4,10,8),new THREE.MeshBasicMaterial({color:0xffd890,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false,fog:false})); sm.add(halo);
+  signal.lantern={mesh:sm, light:sl};
+  a.rockFigs=[figure(out,26.5,-5.2,-37,1.1),figure(out,29.5,-5.2,-38.5,1.1),figure(out,31.5,-5.2,-36.6,1.1),figure(out,33.5,-5.2,-39,1.1)];
+  a.rockFigs.forEach(f=>f.visible=false);
+  const moon=new THREE.DirectionalLight(0x8aa0c8,1.6); moon.position.set(-20,30,10); g.add(moon);
+  g.add(new THREE.HemisphereLight(0x3a4a60,0x101010,.8));
+  a.spawns={hatch:{x:0,z:1.5,yaw:0}};
+  a.update=lanternUpdate;
+}
+buildExterior(); buildCottage(); buildShed(); buildTowerBase(); buildWatchRoom(); buildLantern();
+
+/* =====================================================================
+   AUDIO (procedural, starts on first click)
+   ===================================================================== */
+const AU={ctx:null};
+function audioInit(){
+  if(AU.ctx) { if(AU.ctx.state==="suspended") AU.ctx.resume(); return; }
+  let ctx; try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  AU.ctx=ctx;
+  const master=ctx.createGain(); master.gain.value=.8; master.connect(ctx.destination); AU.master=master;
+  const len=ctx.sampleRate*2, buf=ctx.createBuffer(1,len,ctx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; AU.noise=buf;
+  function loop(type,freq,q,gain){ const s=ctx.createBufferSource(); s.buffer=buf; s.loop=true; const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q; const g=ctx.createGain(); g.gain.value=0; s.connect(f); f.connect(g); g.connect(master); s.start(); return {g,f,base:gain}; }
+  AU.wind=loop("bandpass",420,.6,.16); AU.sea=loop("lowpass",260,.5,.22); AU.rain=loop("highpass",2200,.3,.06); AU.room=loop("lowpass",120,.7,.05);
+  const hum=ctx.createOscillator(); hum.type="sine"; hum.frequency.value=48; const hg=ctx.createGain(); hg.gain.value=0; hum.connect(hg); hg.connect(master); hum.start(); AU.hum={g:hg};
+}
+function setAmb(node,v,t){ if(!AU.ctx) return; node.g.gain.setTargetAtTime(v,AU.ctx.currentTime,t||.6); }
+function burst(freq,dur,gain,type,q){ if(!AU.ctx) return; const c=AU.ctx; const s=c.createBufferSource(); s.buffer=AU.noise; const f=c.createBiquadFilter(); f.type=type||"bandpass"; f.frequency.value=freq; f.Q.value=q||1; const g=c.createGain(); const t=c.currentTime; g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0001,t+dur); s.connect(f); f.connect(g); g.connect(AU.master); s.start(t,Math.random()*1.5); s.stop(t+dur+.05); }
+function tone(f0,f1,dur,gain,type){ if(!AU.ctx) return; const c=AU.ctx, o=c.createOscillator(), g=c.createGain(), t=c.currentTime; o.type=type||"sine"; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(gain,t+.03); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+.05); }
+const SFX={
+  step(surface){ const f={grass:500,wood:260,stone:900,iron:1400,gravel:1100}[surface]||400; burst(f*(.85+Math.random()*.3),.09,.22,"bandpass",1.2); if(surface==="wood") tone(90,70,.08,.05); },
+  door(){ tone(160,95,.7,.06,"sawtooth"); burst(300,.5,.08,"bandpass",4); setTimeout(()=>burst(120,.2,.3,"lowpass"),600); },
+  knock(n){ for(let i=0;i<(n||3);i++) setTimeout(()=>{ tone(85,55,.18,.5); burst(200,.12,.35,"lowpass"); },i*420); },
+  lock(){ burst(2400,.05,.25,"highpass"); setTimeout(()=>burst(1800,.05,.2,"highpass"),90); },
+  open(){ burst(900,.15,.25,"bandpass",2); tone(220,180,.2,.06,"triangle"); },
+  paper(){ burst(3000,.18,.12,"highpass"); },
+  ratchet(n){ for(let i=0;i<(n||10);i++) setTimeout(()=>burst(2600,.03,.22,"bandpass",6),i*110); },
+  sting(){ if(!AU.ctx) return; [110,116.5,155.6,233].forEach((f,i)=>tone(f,f*.98,3.2,.08,i%2?"sawtooth":"triangle")); burst(180,2.8,.12,"lowpass"); },
+  heart(){ tone(60,40,.16,.5); setTimeout(()=>tone(56,38,.14,.38),220); },
+  static(dur){ if(!AU.ctx) return; const c=AU.ctx, s=c.createBufferSource(); s.buffer=AU.noise; s.loop=true; const f=c.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1600; f.Q.value=.7; const g=c.createGain(), t=c.currentTime; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.12,t+.2); g.gain.setValueAtTime(.12,t+dur-.3); g.gain.exponentialRampToValueAtTime(.0001,t+dur); s.connect(f); f.connect(g); g.connect(AU.master); s.start(); s.stop(t+dur+.1); for(let i=0;i<5;i++) setTimeout(()=>tone(300+Math.random()*200,200,.4,.03,"sine"),400+i*500); },
+  splash(){ burst(500,1.2,.25,"lowpass"); },
+  gearbreak(){ for(let i=0;i<7;i++) setTimeout(()=>{ burst(3200,.06,.3,"highpass"); tone(800+Math.random()*900,300,.12,.08,"square"); },i*70); setTimeout(()=>tone(60,30,.8,.3),500); },
+  flame(){ burst(700,.4,.12,"bandpass",.8); },
+  drip(){ tone(1400+Math.random()*500,900,.08,.05); }
+};
+
+/* =====================================================================
+   UI: subtitles, inventory, overlays
+   ===================================================================== */
+let subTimer=0;
+function say(html,secs){ const el=$("sub"); el.innerHTML=html; el.classList.add("on"); subTimer=secs||Math.max(3.5,html.length/22); }
+const ITEM_NAMES={orders:"Relief orders",matches:"Matches",torch:"Torch",ckey:"Cottage key",tkey:"Tower key",okey:"Oil store key",can:"Oil can",scissors:"Wick scissors",gears:"Spare gears",crank:"Winding crank"};
+function refreshInv(){
+  const inv=$("inv"); inv.innerHTML="";
+  for(const k of Object.keys(ITEM_NAMES)){ if(!S.items[k]) continue; let n=ITEM_NAMES[k]; if(k==="can") n+= S.oil==="empty"?" (empty)":S.oil?" (full)":""; const s=document.createElement("span"); s.textContent=n; inv.appendChild(s); }
+}
+let overlayOpen=false, overlayKind="";
+function openOverlay(html,kind){
+  const ov=$("ov"); ov.innerHTML=html; ov.hidden=false; overlayOpen=true; overlayKind=kind||"";
+  if(document.pointerLockElement) document.exitPointerLock();
+  const f=ov.querySelector("[data-focus]")||ov.querySelector("button"); if(f) setTimeout(()=>f.focus({preventScroll:true}),30);
+}
+function closeOverlay(){ $("ov").hidden=true; $("ov").innerHTML=""; overlayOpen=false; overlayKind=""; requestLock(); }
+function gainDoc(id,silent){ if(!S.docs[id]){ S.docs[id]=1; if(!silent) say("<i>Added to your papers.</i> Press J to read them again.",3); } }
+function showDoc(id,extra){
+  const d=DOCS[id]; gainDoc(id,true); SFX.paper();
+  openOverlay(`<div class="paper ${d.hand?"hand":""}" role="dialog" aria-label="${esc(d.title)}">${d.html()}${extra||""}<button class="close" data-focus type="button" id="dclose">Put it down</button></div>`,"doc");
+  $("dclose").onclick=closeOverlay;
+}
+function lockUI(o){
+  const vals=o.dials.map(d=>d.start||0);
+  const render=()=>o.dials.map((d,i)=>`<div class="dial"><button type="button" data-i="${i}" data-d="1" aria-label="Up">▲</button><div class="v" id="dv${i}">${d.labels[vals[i]]}</div><button type="button" data-i="${i}" data-d="-1" aria-label="Down">▼</button><small>${d.name}</small></div>`).join("");
+  openOverlay(`<div class="panel lock" role="dialog" aria-label="${esc(o.title)}"><p class="eyebrow">${esc(o.eyebrow||"LOCK")}</p><h2>${esc(o.title)}</h2><p>${o.text}</p><div class="dials" id="dials">${render()}</div><div class="msg" id="lmsg"></div><div class="row" style="justify-content:center"><button class="btn" type="button" id="ltry" data-focus>Try the lock</button><button class="btn ghost" type="button" id="lback">Step back</button></div></div>`,"lock");
+  $("dials").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const i=+b.dataset.i, dd=+b.dataset.d, n=o.dials[i].labels.length; vals[i]=(vals[i]+dd+n)%n; $("dv"+i).textContent=o.dials[i].labels[vals[i]]; burst(2000,.03,.1,"highpass"); });
+  $("lback").onclick=closeOverlay;
+  $("ltry").onclick=()=>{ const v=vals.map((x,i)=>o.dials[i].labels[x]); if(o.check(v)){ SFX.lock(); closeOverlay(); o.onOpen(); save(); } else { const p=$("ov").querySelector(".panel"); p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake"); $("lmsg").className="msg bad"; $("lmsg").textContent=o.fail||"The lock holds."; burst(400,.15,.3,"lowpass"); } };
+}
+const digits=n=>Array.from({length:n},(_,i)=>String(i));
+const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+/* =====================================================================
+   INTERACTIONS
+   ===================================================================== */
+function has(k){ return !!S.items[k]; }
+function give(k,msg){ S.items[k]=1; refreshInv(); if(msg) say(msg); save(); }
+const IT={
+  crate:{label:"Read the stores docket", act(){ showDoc("delivery"); }},
+  doorNote:{label:"Read the note", act(){ showDoc("doornote"); }},
+  cottageDoor:{label:()=>has("ckey")?"Open the cottage":"Try the cottage door", act(){ if(!has("ckey")){ SFX.lock(); say("Locked. A note is pinned beside the handle."); return; } SFX.door(); go("cot","front"); }},
+  plinth:{label:"Read the plinth", act(){ showDoc("memorial"); }},
+  statueLantern:{label:()=>S.flags.ckey?"The statue's lantern":"Look into the statue's lantern", act(){ if(S.flags.ckey){ say("The little lantern is empty now."); return; } S.flags.ckey=1; SFX.open(); give("ckey","Inside the iron lantern, where a candle should be, is a key on a loop of tarred string."); }},
+  shedDoor:{label:()=>has("okey")?"Open the oil store":"Try the oil store door", act(){ if(!has("okey")){ SFX.lock(); say("The oil store is padlocked."); return; } SFX.door(); go("sh","door"); }},
+  towerDoor:{label:()=>has("tkey")?"Open the tower":"Try the tower door", act(){ if(!has("tkey")){ SFX.lock(); say("The tower door is locked. Above you, the light goes on turning."); return; } SFX.door(); go("tb","door"); }},
+  cottageExit:{label:"Go outside", act(){ SFX.door(); go("ext","cottage"); }},
+  radio:{label:"The wireless set", act(){ if(!S.fired.radio){ S.fired.radio=1; SFX.static(5); say("You turn the dial. Static, and under it, very faint, a voice repeating something. Two syllables. Then nothing.",6); } else { SFX.static(1.5); say("Static. The set's batteries are nearly gone."); } }},
+  lightlist:{label:"Read the List of Lights", act(){ showDoc("lightlist"); }},
+  barograph:{label:"Read the barograph", act(){ showDoc("baro"); }},
+  tides:{label:"Read the tide table", act(){ showDoc("tides"); }},
+  log1919:{label:"Take down the 1919 log", act(){ showDoc("log1919"); }},
+  letter:{label:"Read the letter", act(){ showDoc("letter"); }},
+  chest:{label:()=>S.flags.chest?"The sea chest":"Examine the sea chest", act(){
+    if(S.flags.chest){ say("Margaret's shawl, a pair of small boots, and a bundle of letters in her hand. You close the lid."); return; }
+    lockUI({eyebrow:"ELIAS CRANE'S SEA CHEST", title:"A four-dial lock", text:"The dials are stamped <b>D D</b> and <b>M M</b>.", dials:[{name:"D",labels:digits(4)},{name:"D",labels:digits(10)},{name:"M",labels:digits(2)},{name:"M",labels:digits(10)}],
+      check:v=>v.join("")==="1403",
+      onOpen(){ S.flags.chest=1; give("tkey"); setTimeout(()=>{ showDoc("journal",`<p style="font-family:var(--print);font-size:15px;color:#4a3f2c;text-align:center">Beneath the journal, on a nail through a cork: <b>the tower key</b>.</p>`); },200); }});
+  }},
+  wrennote:{label:"Read the note", act(){ showDoc("wrennote"); }},
+  footlocker:{label:()=>S.flags.locker?"Wren's footlocker":"Examine the footlocker", act(){
+    if(S.flags.locker){ say("Spare socks, a photograph of a girl on a seafront, and nothing else."); return; }
+    lockUI({eyebrow:"T. WREN · FOOTLOCKER", title:"A two-dial lock", text:"The dials read <b>DAY</b>. The box is painted T. WREN in white.", dials:[{name:"DAY",labels:digits(4)},{name:"DAY",labels:digits(10)}],
+      check:v=>v.join("")==="07",
+      onOpen(){ S.flags.locker=1; gainDoc("morse",true); give("okey"); setTimeout(()=>showDoc("diary",`<p style="font-family:var(--print);font-size:15px;color:#4a3f2c;text-align:center">Also in the box: <b>the oil store key</b>, and a Morse card pasted inside the lid (now in your papers).</p>`),200); }});
+  }},
+  shedExit:{label:"Go outside", act(){ SFX.door(); go("ext","shed"); }},
+  drumnote:{label:"Read the chalk", act(){ showDoc("drumnote"); }},
+  drum_red:{label:"Examine the red-banded drum", act(){ drumUI("red"); }},
+  drum_white:{label:"Examine the white-banded drum", act(){ drumUI("white"); }},
+  drum_green:{label:"Examine the green-banded drum", act(){ drumUI("green"); }},
+  towerExit:{label:"Go outside", act(){ SFX.door(); go("ext","tower"); }},
+  stairsUp:{label:"Climb the stairs", act(){ SFX.step("stone"); go("tw","stairs"); }},
+  stairsDown:{label:"Go down the stairs", act(){ go("tb","stairs"); }},
+  ladderUp:{label:"Climb to the lantern", act(){ go("tl","hatch"); }},
+  hatchDown:{label:"Climb down", act(){ go("tw","ladder"); }},
+  manual:{label:"Read the Board's Instructions", act(){ showDoc("manual"); }},
+  oilcan:{label:()=>has("can")?"":"Take the oil can", act(){ if(has("can")) return; S.oil="empty"; AREAS.tb.can.visible=false; AREAS.tb.canProxy.visible=false; give("can","An empty oil can. It smells of paraffin and, faintly, of the sea."); }},
+  log1931:{label:"Read the station log", act(){ showDoc("log1931"); }},
+  drawer:{label:()=>has("scissors")?"The desk drawer":"Open the desk drawer", act(){ if(has("scissors")){ say("Pencils, a blotter, a ruler. Nothing more."); return; } SFX.open(); give("scissors","Wick scissors, a ruler, pencils. You take the scissors."); }},
+  lens:{label:"Examine the plan on the wall", act(){ showDoc("lens"); }},
+  cabinet:{label:()=>S.flags.cabinet?"The cabinet":"Examine the cabinet", act(){
+    if(S.flags.cabinet){ say("Empty shelves, and the shape of where the spares lay in the dust."); return; }
+    lockUI({eyebrow:"WATCH ROOM CABINET", title:"A letter lock", text:"Four brass dials, each lettered A to Z.", dials:[0,1,2,3].map(()=>({name:"",labels:letters})),
+      check:v=>v.join("")==="WIND",
+      onOpen(){ S.flags.cabinet=1; S.clock.spares=[15,20,30,45,60]; S.items.gears=1; S.items.crank=1; S.clock.crank=true; refreshInv(); say("Inside, wrapped in oiled cloth: a winding crank, and five change gears, stamped 15, 20, 30, 45 and 60 teeth.",6); }});
+  }},
+  clockwork:{label:"The clockwork", act(){ clockUI(); }},
+  lamp:{label:"The lamp", act(){ lampUI(); }}
+};
+
+/* =====================================================================
+   DRUMS, CLOCKWORK, LAMP
+   ===================================================================== */
+function drumUI(id){
+  const desc={
+    red:"A red band, much faded. There is a deep dent in its side. When you rock it, it is light: drawn almost to the bottom.",
+    white:"A white band. It rings hollow when you knock it. Empty.",
+    green:"A green band. Full and heavy. The bung has never been drawn."
+  }[id];
+  const canFill = has("can") && id!=="white";
+  openOverlay(`<div class="paper" role="dialog" aria-label="Oil drum"><p class="hd">OIL STORE</p><h3>The ${id}-banded drum</h3><p>${desc}</p>
+    ${has("can")?`<p style="font-size:14px">Your can: ${S.oil==="empty"?"empty":"full"}.</p>`:"<p style='font-size:14px'>You have nothing to carry oil in.</p>"}
+    <div class="act"><button type="button" id="dfill" ${canFill?"":"disabled"}>${S.oil&&S.oil!=="empty"?"Empty the can and fill it here":"Fill the can from this drum"}</button><button type="button" id="dback" data-focus>Leave it</button></div></div>`,"drum");
+  $("dback").onclick=closeOverlay;
+  $("dfill").onclick=()=>{ S.oil = id==="green"?"clean":"salt"; burst(600,.8,.15,"lowpass"); refreshInv(); closeOverlay(); say(id==="red"?"Oil glugs into the can, thin at first, then cloudy.":"Clear paraffin fills the can."); save(); };
+}
+function ratio(){ const c=S.clock; return (c.driver&&c.pinion)? c.driver/c.pinion : 0; }
+function clockDesc(){
+  const c=S.clock;
+  if(!S.finale.on && !c.broken) return "The clockwork ticks steadily. A 60-tooth driver meshes with a 20-tooth pinion; the drum turns once a minute and the lens shaft rises through the ceiling. The weight is high: someone has wound it recently, though the crank hangs wet.";
+  let s=[];
+  s.push(c.brake?"The brake is applied.":"The brake is off.");
+  s.push(c.driver?`Driver: ${c.driver} teeth.`:"The driver arbor is empty.");
+  s.push(c.pinion?`Pinion: ${c.pinion} teeth.`:"The pinion arbor is empty.");
+  s.push(c.wound?"The weight is wound up.":"The weight is down.");
+  if(c.running) s.push(ratioFeedback());
+  return s.join(" ");
+}
+function ratioFeedback(){
+  const r=ratio(); if(!r) return "";
+  const period=60/(2*r);
+  if(Math.abs(period-10)<.01) return "The lens turns. Two, and dark. Two, and dark.";
+  if(period<10) return "The lens turns, but too fast: the groups of flashes come crowding one after another.";
+  return "The lens turns, but too slowly: the dark between the groups drags on.";
+}
+function clockUI(){
+  const c=S.clock;
+  if(!S.finale.on && !c.broken){ openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">WATCH ROOM</p><h2>The clockwork</h2><div class="mach"><div class="state">${clockDesc()}</div></div><div class="row"><button class="btn" type="button" id="cb" data-focus>Step back</button></div></div>`,"clock"); $("cb").onclick=closeOverlay; return; }
+  let sel=null;
+  const draw=()=>{
+    const free=c.spares.filter(t=>t!==c.driver&&t!==c.pinion);
+    $("ov").querySelector(".panel").innerHTML=`<p class="eyebrow">WATCH ROOM · ROTATING APPARATUS</p><h2>The clockwork</h2>
+      <div class="mach">
+        <div class="state" id="cstate">${clockDesc()}</div>
+        <div class="slots">
+          <div class="slotbox"><small>DRIVER · DRUM SHAFT</small><button class="slot" type="button" data-slot="driver" aria-label="Driver slot">${c.driver||"—"}</button></div>
+          <div class="slotbox"><small>PINION · LENS SHAFT</small><button class="slot" type="button" data-slot="pinion" aria-label="Pinion slot">${c.pinion||"—"}</button></div>
+        </div>
+        <div><p class="eyebrow" style="margin:0 0 6px">${c.spares.length?"SPARE GEARS · pick one, then a slot":"NO SPARE GEARS · the cabinet holds the spares"}</p><div class="gears">${free.map(t=>`<button class="gear ${sel===t?"sel":""}" type="button" data-g="${t}">${t}</button>`).join("")}</div></div>
+        <div class="ctl">
+          <button class="btn ghost" type="button" id="cbrake">${c.brake?"Release the brake":"Apply the brake"}</button>
+          <button class="btn ghost" type="button" id="cwind">Wind the weight</button>
+          <button class="btn ghost" type="button" id="cclear">Remove fitted gears</button>
+          <button class="btn" type="button" id="cdone" data-focus>Step back</button>
+        </div>
+        <div class="msg" id="cmsg"></div>
+      </div>`;
+    const P=$("ov").querySelector(".panel");
+    P.querySelectorAll(".gear").forEach(b=>b.onclick=()=>{ sel=+b.dataset.g; draw(); });
+    P.querySelectorAll(".slot").forEach(b=>b.onclick=()=>{
+      const slot=b.dataset.slot;
+      if(!c.brake){ msg("The drum lurches as you touch the train. Apply the brake first.","bad"); return; }
+      if(sel==null){ if(c[slot]){ c[slot]=null; c.running=false; draw(); } else msg("Pick a spare gear first."); return; }
+      c[slot]=sel; sel=null; c.running=false; burst(1500,.08,.2,"bandpass",3); draw(); save();
+    });
+    $("cbrake").onclick=()=>{
+      if(c.brake){
+        c.brake=false;
+        if(!c.driver||!c.pinion){ draw(); msg("Nothing to drive. The arbors spin free."); return; }
+        if(!c.wound){ draw(); msg("Nothing happens. The weight is down."); return; }
+        c.running=true; SFX.ratchet(3); draw(); checkWin();
+      } else { c.brake=true; c.running=false; burst(800,.15,.25,"lowpass"); draw(); }
+      save();
+    };
+    $("cwind").onclick=()=>{ if(!c.crank){ msg("The winding crank is not on its peg. It must be stored with the spares."); return; } c.wound=true; SFX.ratchet(14); draw(); msg("You wind the weight up the shaft. Fourteen turns of the crank.","good"); save(); };
+    $("cclear").onclick=()=>{ if(!c.brake){ msg("Apply the brake first.","bad"); return; } c.driver=null; c.pinion=null; c.running=false; draw(); };
+    $("cdone").onclick=closeOverlay;
+  };
+  const msg=(t,k)=>{ const m=$("cmsg"); if(m){ m.className="msg "+(k||""); m.textContent=t; } };
+  openOverlay(`<div class="panel" role="dialog" aria-label="Clockwork"></div>`,"clock"); draw();
+}
+function lampLit(){ const l=S.lamp; return l.flame==="full" && l.res==="clean"; }
+function lampDesc(){
+  const l=S.lamp;
+  if(!S.finale.on) return "The lamp burns steadily inside the lens, a tall clean flame behind the chimney glass. The reservoir is near full.";
+  const parts=[];
+  parts.push(l.flame==="out"?"The lamp is out.":l.flame==="low"?"The wick burns low behind the warming chimney.":"The flame stands tall and white.");
+  parts.push(l.res==="empty"?"The reservoir is empty.":l.res==="salt"?"The reservoir holds fouled oil.":"The reservoir holds clean oil.");
+  parts.push(l.cock==="open"?"The drain cock is open.":"The drain cock is closed.");
+  parts.push(l.wick==="trimmed"?"The wick is trimmed level.":"The wick is charred and ragged.");
+  return parts.join(" ");
+}
+let lampFail=null;
+function lampUI(){
+  const l=S.lamp;
+  if(!S.finale.on){ openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">LANTERN</p><h2>The lamp</h2><div class="mach"><div class="state">${lampDesc()}</div></div><div class="row"><button class="btn" type="button" id="lb" data-focus>Step back</button></div></div>`,"lamp"); $("lb").onclick=closeOverlay; return; }
+  const draw=()=>{
+    $("ov").querySelector(".panel").innerHTML=`<p class="eyebrow">LANTERN · ${esc(S.oil==null?"no oil can":S.oil==="empty"?"oil can empty":"oil can full")}</p><h2>The lamp</h2>
+    <div class="mach"><div class="state">${lampDesc()}</div>
+    <div class="ctl">
+      <button class="btn ghost" type="button" id="lcock">${l.cock==="open"?"Close the drain cock":"Open the drain cock"}</button>
+      <button class="btn ghost" type="button" id="lfill">Pour oil into the reservoir</button>
+      <button class="btn ghost" type="button" id="ltrim">Trim the wick</button>
+      <button class="btn ghost" type="button" id="llight">Light the wick</button>
+      <button class="btn ghost" type="button" id="lraise" ${l.flame==="low"?"":"disabled"}>Raise the flame</button>
+      <button class="btn ghost" type="button" id="lout" ${l.flame!=="out"?"":"disabled"}>Put the flame out</button>
+      <button class="btn" type="button" id="ldone" data-focus>Step back</button>
+    </div><div class="msg" id="lmsg2"></div></div>`;
+    const msg=(t,k)=>{ const m=$("lmsg2"); m.className="msg "+(k||""); m.textContent=t; };
+    $("lcock").onclick=()=>{ if(l.cock==="closed"){ l.cock="open"; if(l.res!=="empty"){ msg(l.res==="salt"?"Fouled oil runs off into the bucket. It smells of the sea.":"Good oil runs off into the bucket and is lost.", l.res==="salt"?"":"bad"); l.res="empty"; l.flame="out"; burst(500,1,.15,"lowpass"); } else msg("The cock is open. Nothing runs out."); } else { l.cock="closed"; msg("You close the drain cock."); } draw(); save(); };
+    $("lfill").onclick=()=>{ if(S.oil==null){ msg("You have nothing to carry oil in."); return; } if(S.oil==="empty"){ msg("Your oil can is empty."); return; } const oil=S.oil; S.oil="empty"; refreshInv(); burst(600,1,.15,"lowpass");
+      if(l.cock==="open"){ draw(); msg("The oil runs straight through the open cock into the bucket. Your can is empty.","bad"); save(); return; }
+      if(l.res==="salt"){ l.res="salt"; draw(); msg("You pour it in on top of what was already there. The reservoir is still fouled.","bad"); save(); return; }
+      l.res = oil==="clean"?"clean":"salt"; draw(); msg("The reservoir fills."); save(); };
+    $("ltrim").onclick=()=>{ if(!has("scissors")){ msg("You need wick scissors. Fingers won't cut a charred wick level."); return; } if(l.flame!=="out"){ msg("Put the flame out first."); return; } l.wick="trimmed"; burst(3000,.06,.2,"highpass"); draw(); msg("You trim the wick level."); save(); };
+    $("llight").onclick=()=>{ if(l.flame!=="out"){ msg("It is already lit."); return; } if(l.res==="empty"){ msg("There is no oil to burn."); return; }
+      SFX.flame();
+      if(l.wick!=="trimmed"){ draw(); msg("The flame catches, ragged and smoking. Black soot climbs the chimney glass. You put it out. The wick must be trimmed.","bad"); return; }
+      l.flame="low"; l.litAt=S.play; draw(); msg("The wick takes a low flame. The chimney begins to warm."); save();
+      if(l.res==="salt") scheduleSaltFail(); };
+    $("lraise").onclick=()=>{ if(S.play-l.litAt<30){ l.litAt=S.play; msg("The flame leaps and smokes and gutters. You turn it back down. The chimney is not warm yet.","bad"); return; }
+      l.flame="full"; draw(); msg(l.res==="clean"?"The flame rises tall and white.":"The flame rises, but it spits.", l.res==="clean"?"good":""); save(); checkWin(); };
+    $("lout").onclick=()=>{ l.flame="out"; draw(); msg("You turn the wick down until it dies."); };
+    $("ldone").onclick=closeOverlay;
+  };
+  openOverlay(`<div class="panel" role="dialog" aria-label="Lamp"></div>`,"lamp"); draw();
+}
+function scheduleSaltFail(){ lampFail=S.play+8+Math.random()*4; }
+
+/* =====================================================================
+   AREA SWITCHING & PLAYER
+   ===================================================================== */
+let cur=null;
+const keys={};
+let headBob=0, stepAcc=0;
+function enterArea(id,spawn,instant){
+  if(cur) scene.remove(cur.group);
+  cur=AREAS[id]; S.area=id;
+  scene.add(cur.group);
+  scene.fog=new THREE.FogExp2(cur.fog[0],cur.fog[1]);
+  scene.background=new THREE.Color(cur.bg);
+  if(spawn){ const sp=cur.spawns[spawn]; S.x=sp.x; S.z=sp.z; S.yaw=sp.yaw; S.pitch=0; }
+  ambience();
+  onEnter(id);
+}
+function go(id,spawn){
+  const f=$("fade"); f.style.opacity=1;
+  setTimeout(()=>{ enterArea(id,spawn); save(); setTimeout(()=>{ f.style.opacity=0; },60); },420);
+}
+function ambience(){
+  if(!AU.ctx||!cur) return;
+  const out=cur.ambience==="out", high=cur.ambience==="high";
+  setAmb(AU.wind,out?.14:high?.2:.03); setAmb(AU.sea,out?.22:high?.12:.05); setAmb(AU.rain,out?.06:high?.05:.012); setAmb(AU.room,out?0:.06);
+}
+function inRects(x,z,rects){ for(const r of rects) if(x>=r.x0&&x<=r.x1&&z>=r.z0&&z<=r.z1) return true; return false; }
+function collide(nx,nz){
+  const a=cur, R=.3;
+  if(a.rects.length){ const rr=a.rects.map(r=>({x0:r.x0+R,x1:r.x1-R,z0:r.z0+R,z1:r.z1-R})); if(!inRects(nx,nz,rr)){ if(inRects(nx,S.z,rr)) nz=S.z; else if(inRects(S.x,nz,rr)) nx=S.x; else { nx=S.x; nz=S.z; } } }
+  if(a.inside){ const dx=nx-a.inside.x, dz=nz-a.inside.z, d=Math.hypot(dx,dz), lim=a.inside.r-R; if(d>lim){ nx=a.inside.x+dx/d*lim; nz=a.inside.z+dz/d*lim; } }
+  for(const b of a.boxes){
+    if(nx>b.x0-R&&nx<b.x1+R&&nz>b.z0-R&&nz<b.z1+R){
+      const pl=nx-(b.x0-R), pr=(b.x1+R)-nx, pu=nz-(b.z0-R), pd=(b.z1+R)-nz, m=Math.min(pl,pr,pu,pd);
+      if(m===pl) nx=b.x0-R; else if(m===pr) nx=b.x1+R; else if(m===pu) nz=b.z0-R; else nz=b.z1+R;
+    }
+  }
+  for(const c of a.circles){ const dx=nx-c.x, dz=nz-c.z, d=Math.hypot(dx,dz), lim=c.r+R; if(d<lim&&d>0){ nx=c.x+dx/d*lim; nz=c.z+dz/d*lim; } }
+  return [nx,nz];
+}
+function movePlayer(dt){
+  if(overlayOpen||!started||ending) return;
+  let f=0,s=0;
+  if(keys.KeyW||keys.ArrowUp) f+=1; if(keys.KeyS||keys.ArrowDown) f-=1; if(keys.KeyA||keys.ArrowLeft) s-=1; if(keys.KeyD||keys.ArrowRight) s+=1;
+  f+=touchMove.f; s+=touchMove.s;
+  const len=Math.hypot(f,s); if(len>1){ f/=len; s/=len; }
+  const sp=(keys.ShiftLeft||keys.ShiftRight)?3.1:1.9;
+  const sin=Math.sin(S.yaw), cos=Math.cos(S.yaw);
+  const dx=(-sin*f+cos*s)*sp*dt, dz=(-cos*f-sin*s)*sp*dt;
+  const moving=len>.05;
+  if(moving){ const [nx,nz]=collide(S.x+dx,S.z+dz); const moved=Math.hypot(nx-S.x,nz-S.z); S.x=nx; S.z=nz; headBob+=moved*5.2; stepAcc+=moved; if(stepAcc>.68){ stepAcc=0; SFX.step(surfaceAt()); } }
+}
+function surfaceAt(){ if(cur.id==="ext"){ if(S.z>30.5) return "wood"; if(Math.abs(S.x)<.9) return "gravel"; return "grass"; } return cur.surface; }
+function updateCamera(){
+  const bob=Math.sin(headBob)*.035;
+  camera.position.set(S.x,1.62+bob,S.z);
+  camera.rotation.order="YXZ"; camera.rotation.y=S.yaw; camera.rotation.x=S.pitch; camera.rotation.z=0;
+  torch.visible=S.torch; torchFill.visible=S.torch;
+  torch.target.position.set(.04+Math.sin(headBob*.5)*.012,-.06+Math.cos(headBob)*.01,-1);
+}
+const ray=new THREE.Raycaster(); ray.far=2.4;
+let hovered=null;
+function updateHover(){
+  hovered=null;
+  if(overlayOpen||!started||ending){ $("prompt").textContent=""; $("cross").className=""; return; }
+  ray.setFromCamera({x:0,y:0},camera);
+  const hits=ray.intersectObjects(cur.group.children,true);
+  for(const h of hits){
+    const o=h.object; if(!o.isMesh) continue;
+    let vis=true, p=o; while(p){ if(!p.visible){ vis=false; break; } p=p.parent; } if(!vis) continue;
+    if(o.material===M.glass || o.material===M.wet) continue;
+    const id=o.userData.it; const def=id&&IT[id]; if(!def) break;
+    const label=typeof def.label==="function"?def.label():def.label; if(!label) break;
+    hovered=id; $("prompt").innerHTML=`<kbd>${touchMode?"Use":"E"}</kbd>${esc(label)}`; $("cross").className="hot"; return; }
+  $("prompt").textContent=""; $("cross").className="";
+}
+function interact(){ if(!hovered||overlayOpen) return; const d=IT[hovered]; d.act(); }
+
+/* =====================================================================
+   WORLD UPDATE: light, lens, signal, events
+   ===================================================================== */
+let lensAngle=0;
+const MORSE={W:".--",I:"..",N:"-.",D:"-.."};
+const morseSeq=(()=>{ const u=.32, seq=[]; for(const ch of "WIND"){ const code=MORSE[ch]; for(let i=0;i<code.length;i++){ seq.push([1,code[i]==="."?u:u*3]); seq.push([0, i<code.length-1?u:u*3]); } } seq[seq.length-1][1]=u*8; return seq; })();
+const morseTotal=morseSeq.reduce((a,b)=>a+b[1],0);
+function signalOn(t){ let x=t%morseTotal; for(const [on,d] of morseSeq){ if(x<d) return !!on; x-=d; } return false; }
+function lightRunning(){ return S.clock.running && !S.clock.brake; }
+function updateLight(dt){
+  const lit = S.finale.on ? lampLit() : !S.clock.broken;
+  const rpm = lightRunning() ? ratio() : 0;
+  lensAngle += rpm*Math.PI*2/60*dt;
+  beamGroup.rotation.y=lensAngle; beamGroup.visible=lit;
+  const ext=AREAS.ext; ext.lantern.material.emissiveIntensity=lit?2.2:0.05; ext.lantern.material.opacity=lit?.85:.25; ext.lampLight.intensity=lit?140:0;
+  for(const lg of lensGroups){ lg.rotation.y=lensAngle; lg.userData.panelMat.emissiveIntensity=lit?.9:0; }
+  const tl=AREAS.tl, l=S.lamp;
+  const fl = S.finale.on ? (l.flame==="out"?0:l.flame==="low"?.35:1) : (S.clock.broken?0:1);
+  tl.flame.visible=fl>0; tl.flame.scale.set(1,.6+fl*1.4,1); tl.flameLight.intensity=fl*10*(0.9+Math.random()*.1);
+  // drum & gears visuals
+  const tw=AREAS.tw; tw.drum.rotation.x += (lightRunning()?1:0)*Math.PI*2/60*dt; tw.gearA.visible=!!S.clock.driver; tw.gearB.visible=!!S.clock.pinion;
+  if(S.clock.driver) tw.gearA.scale.setScalar(S.clock.driver/60); if(S.clock.pinion) tw.gearB.scale.setScalar(S.clock.pinion/20);
+  tw.gearA.rotation.y += (lightRunning()?1:0)*Math.PI*2/60*dt; tw.gearB.rotation.y -= rpm*Math.PI*2/60*dt;
+  // signal
+  const sOn = S.finale.on && !S.finale.done && signalOn(S.play);
+  for(const s of [signal.ext,signal.lantern]){ s.mesh.visible=sOn; s.light.intensity=sOn?60:0; }
+  // hum
+  if(AU.ctx) setAmb(AU.hum, (rpm>0 && (cur.id==="tw"||cur.id==="tl"||cur.id==="tb"))?.03:0, .4);
+  if(lampFail!=null && S.play>=lampFail){ lampFail=null; if(S.lamp.flame!=="out" && S.lamp.res==="salt"){ S.lamp.flame="out"; S.lamp.wick="ragged"; SFX.flame(); say("The flame spits, turns blue, and dies. Salt. The wick is clogged with it."); if(overlayKind==="lamp") lampUI(); } }
+}
+function extUpdate(dt){
+  const a=AREAS.ext;
+  if(rainSegs){ rainSegs.position.set(S.x,0,S.z); const p=rainSegs.geometry.attributes.position; for(let i=0;i<p.count;i+=2){ let y=p.getY(i)-dt*14; if(y<-1){ y+=15; } p.setY(i,y); p.setY(i+1,y-.4); } p.needsUpdate=true; }
+  a.sea.position.y=-6+Math.sin(S.play*.4)*.12;
+}
+function lanternUpdate(){}
+
+const EVENTS=[
+  {id:"intro", cond:()=>S.play>1.5 && cur.id==="ext", run(){ say("The <i>Ellen Rae</i> is already pulling away into the dark. Above the landing, the light turns. <i>Two, and dark. Two, and dark.</i>",8); }},
+  {id:"rockfig", cond:()=>cur.id==="ext" && S.x>17 && S.z<-6, run(){ AREAS.ext.rockFigure.visible=true; S.fired.rockfigT=S.play; SFX.sting(); say("Far below, on the north rocks, someone is standing at the waterline, looking up at the light.",6); }},
+  {id:"rockfigGone", cond:()=>S.fired.rockfig && (S.play-(S.fired.rockfigT||0)>16 || cur.id!=="ext"), run(){ AREAS.ext.rockFigure.visible=false; }},
+  {id:"cotIn", cond:()=>cur.id==="cot", run(){ say("Cold. The table is laid for two. The food on the plates has been there for days. Wet prints cross the floor.",7); }},
+  {id:"knock", cond:()=>cur.id==="cot" && S.flags.chest && S.x<5 && S.z>3 && S.z<6, run(){ setTimeout(()=>{ SFX.knock(3); say("Three knocks, on the window behind you.",5); },1800); }},
+  {id:"winding", cond:()=>cur.id==="tb" && !S.finale.on, run(){ SFX.ratchet(22); setTimeout(()=>say("Above you, someone is winding the clock. The ratchet clicks, and stops.",6),400); }},
+  {id:"twIn", cond:()=>cur.id==="tw" && !S.finale.on, run(){ say("No one is here. The winding crank still swings gently on its peg, and the floor beneath it is wet.",7); }},
+  {id:"tlIn", cond:()=>cur.id==="tl" && !S.finale.on && !S.flags.locker, run(){ say("The lamp burns. The lens turns around it with a slow, grinding patience. Below, the sea goes white over the north rocks.",7); }},
+  {id:"finale", cond:()=>cur.id==="tl" && S.flags.locker && !S.finale.on && S.fired.tlIn2, run(){ startFinale(); }},
+  {id:"tlIn2", cond:()=>cur.id==="tl" && S.flags.locker, run(){} }
+];
+function runEvents(){ for(const e of EVENTS){ if(!S.fired[e.id] && e.cond()){ S.fired[e.id]=1; e.run(); } } }
+function onEnter(id){ if(id==="tl") lanternFigs(); }
+function lanternFigs(){ const show=S.finale.on && !S.finale.done; AREAS.tl.rockFigs.forEach((f,i)=>{ f.visible=show && i<=Math.floor(S.finale.t/150); }); }
+
+/* =====================================================================
+   FINALE
+   ===================================================================== */
+const FINALE_LEN=14*60;
+function startFinale(){
+  S.finale.on=true; S.finale.t=0;
+  S.clock={brake:false, driver:null, pinion:null, wound:false, running:false, broken:true, spares:S.clock.spares||[], crank:!!S.clock.crank};
+  S.lamp={res:"salt", cock:"closed", wick:"ragged", flame:"out", litAt:0};
+  SFX.flame(); setTimeout(()=>SFX.gearbreak(),900); setTimeout(()=>SFX.sting(),1400);
+  say("The flame gutters, turns blue, and goes out. Below you, something in the clockwork shears with a sound like teeth breaking. The lens slows, and stops.<br><i>The light is out.</i>",9);
+  setTimeout(()=>{ say("Out on the north rocks, a small light has begun to blink. It is not a ship.",7); },10000);
+  setTimeout(()=>{ $("watch").hidden=false; setTimeout(()=>{ if(!keys.KeyT) $("watch").hidden=true; },4000); say("<i>23:56.</i> Before midnight, Wren wrote. You have until the dark reaches you.",6); },17500);
+  checkpoint=JSON.parse(JSON.stringify(S));
+  lanternFigs(); save();
+}
+const FEV=[
+  {at:120, run(){ lanternFigs(); say("More of them now, at the line of the weed. They are not looking at the dark tower. They are looking at you.",6); }},
+  {at:240, run(){ SFX.knock(4); say("Far below, someone is knocking at the tower door. Slowly. Patiently.",6); }},
+  {at:390, run(){ SFX.door(); say("The tower door opens. You hear the sea come in with it.",6); }},
+  {at:540, run(){ say("Wet footsteps on the stair. They climb a few steps, and stop, and climb.",6); }},
+  {at:690, run(){ SFX.sting(); say("It is in the watch room. It is very close now.",6); }}
+];
+function finaleUpdate(dt){
+  if(!S.finale.on||S.finale.done) return;
+  S.finale.t+=dt;
+  for(const e of FEV){ const k="f"+e.at; if(!S.fired[k] && S.finale.t>=e.at){ S.fired[k]=1; e.run(); } }
+  // exterior figures creep toward the tower
+  const ext=AREAS.ext, p=clamp(S.finale.t/FINALE_LEN,0,1);
+  ext.figs.forEach((f,i)=>{ f.visible = S.finale.t>60+i*40; const h=f.userData.home; const tx=0, tz=-19; f.position.x=h.x+(tx-h.x)*p*.55; f.position.z=h.z+(tz-h.z)*p*.55; f.lookAt(S.x,0,S.z);
+    if(cur.id==="ext" && f.visible && Math.hypot(S.x-f.position.x,S.z-f.position.z)<1.6) die("near"); });
+  if(Math.random()<dt*Math.max(0,(S.finale.t-500)/300)) SFX.heart();
+  if(S.finale.t>=FINALE_LEN) die("time");
+}
+function checkWin(){ if(S.finale.on && !S.finale.done && lampLit() && lightRunning() && Math.abs(ratio()-3)<1e-6){ win(); } }
+
+/* =====================================================================
+   ENDINGS
+   ===================================================================== */
+let ending=false;
+function win(){
+  S.finale.done=true; ending=true; save();
+  if(overlayOpen){ $("ov").hidden=true; overlayOpen=false; }
+  setTimeout(()=>{
+    const found=DOC_ORDER.filter(k=>S.docs[k]).length;
+    const left=Math.max(0,FINALE_LEN-S.finale.t), mm=Math.floor(left/60), ss=Math.floor(left%60);
+    openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">THE KEEPER'S LOG · ENDING</p><h1>Light Exhibited</h1>
+      <p>The flame steadies. Below you the clockwork takes up its weight with a sound like a held breath let go, and the lens begins to turn.</p>
+      <p><i>Two, and dark. Two, and dark.</i></p>
+      <p>On the stair, the wet footsteps stop.</p>
+      <p>You stay at the glass until morning. Out on the north rocks, figures stand at the line of the weed and come no higher. One stands a little apart from the others. Beside her stands another, taller, in a keeper's coat. Beside him, a young man, looking up.</p>
+      <p>At four o'clock you hear the weight being wound below you. When you go down, the crank is still turning on its own momentum, and the floor is wet.</p>
+      <p>The <i>Ellen Rae</i> comes in on the morning tide. You meet her at the landing and tell the master you will be staying on.</p>
+      <p>In the station log, under the night of the 23rd, below your own entry, there is one more line, in a hand you have seen in every book on the shelf:</p>
+      <p style="font-family:var(--hand);font-size:26px;color:var(--lamp);text-align:center">Relief arrived. Light exhibited. — E.C.</p>
+      <p style="color:var(--dim)">Papers found: ${found} of ${DOC_ORDER.length}. Time to spare: ${mm}:${String(ss).padStart(2,"0")}.</p>
+      <div class="row"><button class="btn" type="button" id="again" data-focus>Begin again</button></div></div>`,"end");
+    $("again").onclick=()=>{ clearSave(); location.reload(); };
+  },2200);
+}
+function die(kind){
+  if(ending) return; ending=true; S.finale.done=true;
+  if(overlayOpen){ $("ov").hidden=true; overlayOpen=false; }
+  SFX.sting(); SFX.splash();
+  $("fade").style.opacity=.85;
+  setTimeout(()=>{
+    const text = kind==="near" ? "<p>You come too close. It turns its face toward you, and it is wet, and it is patient, and it knows your name.</p><p>Behind you the tower stands dark. Out on the rocks, a small light goes on blinking.</p>"
+      : "<p>The last of the dark comes up the stair.</p><p>You hear it in the watch room, then on the ladder. The lantern fills with the smell of the sea. Something stands at the top of the ladder, and water runs from it onto the iron floor, and it waits, very politely, for you to turn around.</p><p>Out on the north rocks, a small light goes on blinking.</p>";
+    openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">THE KEEPER'S LOG · ENDING</p><h1>Dark Water</h1>${text}<div class="row"><button class="btn" type="button" id="retry" data-focus>Return to the moment the light went out</button><button class="btn ghost" type="button" id="restart">Begin again</button></div></div>`,"end");
+    $("retry").onclick=()=>{ restore(checkpoint); };
+    $("restart").onclick=()=>{ clearSave(); location.reload(); };
+  },1600);
+}
+function restore(st){
+  S=JSON.parse(JSON.stringify(st)); ending=false; lampFail=null;
+  $("ov").hidden=true; overlayOpen=false; $("fade").style.opacity=0;
+  enterArea(S.area,null); refreshInv(); lanternFigs();
+  AREAS.tb.can.visible=!S.items.can; AREAS.tb.canProxy.visible=!S.items.can;
+  say("<i>23:56.</i> The light is out. Out on the rocks, a small light is blinking.",6);
+  requestLock(); save();
+}
+
+/* =====================================================================
+   PAUSE, JOURNAL, TITLE
+   ===================================================================== */
+function concerns(){
+  const c=[];
+  c.push([!!S.items.ckey,"The cottage is locked. Wren's note says where the key is."]);
+  if(S.items.ckey) c.push([!!S.flags.chest,"Elias's sea chest: D D M M."]);
+  if(S.items.ckey) c.push([!!S.flags.locker,"Wren's footlocker: the day of the month."]);
+  if(S.flags.chest) c.push([!!S.fired.winding,"Go up into the tower."]);
+  if(S.flags.locker && !S.finale.on) c.push([false,"Wren: \"Go up to the light before midnight.\""]);
+  if(S.finale.on){
+    c.push([!!S.flags.cabinet,"The spare gears are in the watch-room cabinet."]);
+    c.push([lightRunning() && Math.abs(ratio()-3)<1e-6,"Restore the light's character: two, and dark, every ten seconds."]);
+    c.push([S.lamp.res==="clean","Clean oil in the reservoir."]);
+    c.push([lampLit(),"The lamp relit, at full flame."]);
+  }
+  return c;
+}
+function pauseMenu(){
+  if(overlayOpen||ending) return; pauseAt=performance.now();
+  openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">PAUSED · MERROW ISLAND · 23RD OCTOBER 1931</p><h2>What you know needs doing</h2><ul class="concerns">${concerns().map(([d,t])=>`<li class="${d?"done":""}">${esc(t)}</li>`).join("")}</ul>
+    <div class="keys"><b>Mouse</b><span>Look (click to capture the mouse)</span><b>W A S D</b><span>Walk · Shift to hurry</span><b>E / click</b><span>Examine, take, open</span><b>F</b><span>Torch on or off</span><b>J</b><span>Your papers</span><b>T</b><span>Pocket watch</span></div>
+    <div class="row"><button class="btn" type="button" id="pres" data-focus>Return</button><button class="btn ghost" type="button" id="ppap">Papers</button>${checkpoint?`<button class="btn ghost" type="button" id="pchk">Back to when the light went out</button>`:""}<button class="btn ghost" type="button" id="pnew">Begin again</button></div></div>`,"pause");
+  $("pres").onclick=closeOverlay; $("ppap").onclick=journal;
+  if($("pchk")) $("pchk").onclick=()=>restore(checkpoint);
+  $("pnew").onclick=()=>{ if($("pnew").dataset.sure){ clearSave(); location.reload(); } else { $("pnew").dataset.sure=1; $("pnew").textContent="Click again to erase your progress"; } };
+}
+function journal(){
+  const docs=DOC_ORDER.filter(k=>S.docs[k]);
+  openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">YOUR PAPERS · ${docs.length} OF ${DOC_ORDER.length}</p><h2>Papers</h2><div class="list" id="jl">${docs.map(k=>`<button type="button" data-d="${k}">${esc(DOCS[k].title)}</button>`).join("")||"<p class='none'>Nothing yet.</p>"}</div>
+    <div class="row"><button class="btn" type="button" id="jclose" data-focus>Close</button></div></div>`,"journal");
+  $("jl").querySelectorAll("button").forEach(b=>b.onclick=()=>{ showDoc(b.dataset.d); $("dclose").onclick=journal; });
+  $("jclose").onclick=closeOverlay;
+}
+let started=false;
+function title(){
+  const sv=load();
+  openOverlay(`<div class="panel" role="dialog"><p class="eyebrow">MERROW ISLAND · OCTOBER 1931</p><h1>The Keeper's Log</h1>
+    <p>No one on Merrow Island has answered the wireless in eleven days. Every night, passing ships still see the light turning.</p>
+    <p>You are the relief keeper. The boat will not come back for you until dawn.</p>
+    <div class="keys"><b>Mouse</b><span>Look</span><b>W A S D</b><span>Walk · Shift to hurry</span><b>E / click</b><span>Examine, take, open</span><b>F · J · T</b><span>Torch · Papers · Pocket watch</span><b>Esc</b><span>Pause</span></div>
+    <p style="color:var(--dim);font-size:14px">Play with headphones, in the dark. Everything you need to solve the island is written down somewhere on it.</p>
+    <div class="row"><button class="btn" type="button" id="tstart" data-focus>${sv?"Continue":"Step onto the landing"}</button>${sv?`<button class="btn ghost" type="button" id="tnew">Begin again</button>`:""}</div></div>`,"title");
+  $("tstart").onclick=()=>{ audioInit(); if(sv){ S=sv.S; checkpoint=sv.checkpoint; enterArea(S.area,null); AREAS.tb.can.visible=!S.items.can; AREAS.tb.canProxy.visible=!S.items.can; } else enterArea("ext","pier"); refreshInv(); started=true; closeOverlay(); ambience(); };
+  if($("tnew")) $("tnew").onclick=()=>{ clearSave(); S=freshState(); checkpoint=null; audioInit(); enterArea("ext","pier"); refreshInv(); started=true; closeOverlay(); ambience(); };
+}
+
+/* =====================================================================
+   SAVE
+   ===================================================================== */
+function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify({S,checkpoint})); }catch(e){} }
+function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(!r) return null; const d=JSON.parse(r); if(d&&d.S&&!d.S.finale.done) return d; return null; }catch(e){ return null; } }
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+/* =====================================================================
+   INPUT
+   ===================================================================== */
+let touchMode=false;
+const touchMove={f:0,s:0};
+function requestLock(){ if(touchMode||!started||ending) return; try{ const p=canvas.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
+let dragLook=false, lastMX=0, lastMY=0, downX=0, downY=0;
+canvas.addEventListener("mousedown",e=>{ if(!started||overlayOpen) return; audioInit(); if(document.pointerLockElement===canvas){ interact(); return; } dragLook=true; lastMX=downX=e.clientX; lastMY=downY=e.clientY; requestLock(); });
+window.addEventListener("mouseup",e=>{ if(dragLook && Math.hypot(e.clientX-downX,e.clientY-downY)<5 && !document.pointerLockElement) interact(); dragLook=false; });
+window.addEventListener("mousemove",e=>{
+  if(!started||overlayOpen||ending) return;
+  let mx=0,my=0;
+  if(document.pointerLockElement===canvas){ mx=clamp(e.movementX,-120,120); my=clamp(e.movementY,-120,120); }
+  else if(dragLook){ mx=e.clientX-lastMX; my=e.clientY-lastMY; lastMX=e.clientX; lastMY=e.clientY; }
+  S.yaw-=mx*.0022; S.pitch=clamp(S.pitch-my*.0022,-1.35,1.35);
+});
+let lockLostAt=0, pauseAt=0;
+document.addEventListener("pointerlockchange",()=>{ if(!document.pointerLockElement){ lockLostAt=performance.now(); if(started && !overlayOpen && !ending && !touchMode) pauseMenu(); } });
+window.addEventListener("keydown",e=>{
+  if(e.code==="Escape"){
+    if(overlayOpen){ if(overlayKind==="pause" && performance.now()-pauseAt<450) return; if(!["title","end"].includes(overlayKind)) closeOverlay(); }
+    else if(started && !ending && performance.now()-lockLostAt>450) pauseMenu();
+    return; }
+  if(overlayOpen){ if(e.code==="KeyJ" && overlayKind==="journal"){ closeOverlay(); } return; }
+  if(!started||ending) return;
+  keys[e.code]=true;
+  if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) e.preventDefault();
+  if(e.code==="KeyE") interact();
+  if(e.code==="KeyF"){ S.torch=!S.torch; burst(2600,.03,.2,"highpass"); }
+  if(e.code==="KeyJ") journal();
+  if(e.code==="KeyT") $("watch").hidden=false;
+  if(e.code==="KeyP") pauseMenu();
+});
+window.addEventListener("keyup",e=>{ keys[e.code]=false; if(e.code==="KeyT" && !(S.finale.on && S.finale.t<20)) $("watch").hidden=true; });
+window.addEventListener("blur",()=>{ for(const k in keys) keys[k]=false; });
+// touch
+let stickId=null, lookId=null, sx0=0, sy0=0, lx0=0, ly0=0;
+window.addEventListener("touchstart",e=>{
+  if(!started) return; if(!touchMode){ touchMode=true; $("touch").hidden=false; $("hint").hidden=true; }
+  audioInit();
+  for(const t of e.changedTouches){ if(overlayOpen) continue; if(t.target.id==="tuse") continue; if(t.clientX<window.innerWidth*.4 && stickId==null){ stickId=t.identifier; sx0=t.clientX; sy0=t.clientY; } else if(lookId==null){ lookId=t.identifier; lx0=t.clientX; ly0=t.clientY; } }
+},{passive:true});
+window.addEventListener("touchmove",e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier===stickId){ touchMove.s=clamp((t.clientX-sx0)/50,-1,1); touchMove.f=clamp(-(t.clientY-sy0)/50,-1,1); }
+    if(t.identifier===lookId && !overlayOpen){ S.yaw-=(t.clientX-lx0)*.005; S.pitch=clamp(S.pitch-(t.clientY-ly0)*.005,-1.35,1.35); lx0=t.clientX; ly0=t.clientY; }
+  }
+},{passive:true});
+window.addEventListener("touchend",e=>{ for(const t of e.changedTouches){ if(t.identifier===stickId){ stickId=null; touchMove.f=touchMove.s=0; } if(t.identifier===lookId) lookId=null; } },{passive:true});
+$("tuse").addEventListener("click",()=>interact());
+
+/* =====================================================================
+   LOOP
+   ===================================================================== */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  if(started && !overlayOpen && !ending){ S.play+=dt; finaleUpdate(dt); runEvents(); }
+  else if(started && overlayOpen && S.finale.on && !S.finale.done && overlayKind!=="pause" && !ending){ S.play+=dt; finaleUpdate(dt); }
+  if(subTimer>0){ subTimer-=dt; if(subTimer<=0) $("sub").classList.remove("on"); }
+  movePlayer(dt);
+  if(cur){ if(cur.update) cur.update(dt); updateLight(dt); updateCamera(); updateHover(); renderer.render(scene,camera); }
+  // watch
+  const base = S.finale.on ? 23*60+56 + S.finale.t/60 : Math.min(23*60+50, 22*60+5 + S.play/12);
+  const hh=Math.floor(base/60)%24, mi=Math.floor(base%60);
+  $("watcht").textContent=String(hh).padStart(2,"0")+":"+String(mi).padStart(2,"0");
+  if(Math.random()<dt*.04 && cur && (cur.id==="tb"||cur.id==="sh")) SFX.drip();
+  requestAnimationFrame(frame);
+}
+enterArea("ext","pier");
+title();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
